@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>MOVES</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.example.moves</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>MOVES uses voice to enter chess moves like "e4"</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>MOVES needs microphone for voice chess commands</string>
+</dict>
+</plist>
