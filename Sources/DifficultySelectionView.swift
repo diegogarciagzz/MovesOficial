@@ -2,7 +2,7 @@
 //  DifficultySelectionView.swift
 //  Chess
 //
-//  Created by Jared Cassoutt on 10/28/24.
+//  Created by Diego García
 //
 
 import SwiftUI

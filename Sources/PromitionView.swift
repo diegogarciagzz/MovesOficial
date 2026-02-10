@@ -2,7 +2,7 @@
 //  PromitionView.swift
 //  Chess
 //
-//  Created by Jared Cassoutt on 10/27/24.
+//  Created by Diego García
 //
 
 import SwiftUI

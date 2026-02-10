@@ -2,7 +2,8 @@
 //  SpeechManager.swift
 //  MovesDiego
 //
-//  Created by Mariana G on 04/02/26.
+//
+//  Created by Diego García
 //
 
 import AVFoundation

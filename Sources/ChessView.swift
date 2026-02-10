@@ -2,7 +2,7 @@
 //  ChessView.swift
 //  Chess
 //
-//  Created by Jared Cassoutt on 10/27/24.
+//  Created by Diego García
 //
 
 import SwiftUI
@@ -17,6 +17,7 @@ public struct ChessView: View {
     @State private var showDifficultySelection = true
     @State private var selectedDifficulty: DifficultyLevel = .easy
     @StateObject private var speaker = SpeechManager()
+    @StateObject private var voiceManager = VoiceInputManager()
 
     public init() {
         _game = StateObject(wrappedValue: ChessGame(difficulty: .easy))
@@ -137,6 +138,52 @@ public struct ChessView: View {
                             Spacer()
                         }
                         .padding(.bottom, 8)
+                        
+                        // 🎤 BOTÓN DE VOZ GRANDE
+                        Button(action: {
+                            voiceManager.startListening()
+                        }) {
+                            HStack(spacing: 12) {
+                                Image(systemName: voiceManager.isListening ? "mic.fill" : "mic")
+                                    .font(.system(size: 24, weight: .bold))
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(voiceManager.isListening ? "Listening..." : "Voice Control")
+                                        .font(.system(size: 18, weight: .semibold))
+                                    
+                                    if !voiceManager.recognizedText.isEmpty {
+                                        Text(voiceManager.recognizedText)
+                                            .font(.system(size: 12))
+                                            .lineLimit(1)
+                                    }
+                                }
+                            }
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
+                            .frame(maxWidth: boardSize)
+                            .background(
+                                voiceManager.isListening ?
+                                LinearGradient(colors: [Color.red, Color.red.opacity(0.8)], startPoint: .leading, endPoint: .trailing) :
+                                LinearGradient(colors: [Color.blue, Color.blue.opacity(0.8)], startPoint: .leading, endPoint: .trailing)
+                            )
+                            .cornerRadius(12)
+                            .shadow(color: voiceManager.isListening ? .red.opacity(0.5) : .blue.opacity(0.4), radius: 10)
+                        }
+                        .accessibilityLabel(voiceManager.isListening ? "Stop listening" : "Start voice control")
+                        .padding(.bottom, 12)
+                        
+                        // Error message si existe
+                        if !voiceManager.errorMessage.isEmpty {
+                            Text(voiceManager.errorMessage)
+                                .font(.system(size: 14))
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 8)
+                                .background(Color.red.opacity(0.2))
+                                .cornerRadius(8)
+                                .frame(width: boardSize)
+                        }
                         
                         // Chess Board
                         VStack(spacing: 0) {
@@ -295,7 +342,7 @@ public struct ChessView: View {
                     }
                     .frame(width: boardSize)
                     
-                    // RIGHT: Move History Sidebar - CON GEOMETRYREADER PARA SCROLL
+                    // RIGHT: Move History Sidebar
                     VStack(alignment: .leading, spacing: 0) {
                         // Header
                         Text("Move History")
@@ -329,59 +376,65 @@ public struct ChessView: View {
                         .padding(.vertical, 14)
                         .background(Color.white.opacity(0.05))
                         
-                        // Scrollable moves - CON GEOMETRYREADER
-                        GeometryReader { scrollGeo in
-                            ScrollView {
-                                VStack(spacing: 0) {
-                                    ForEach(movePairs, id: \.moveNumber) { pair in
-                                        HStack(spacing: 16) {
-                                            Text("\(pair.moveNumber)")
+                        // Scrollable moves
+                        ScrollView {
+                            VStack(spacing: 0) {
+                                ForEach(movePairs, id: \.moveNumber) { pair in
+                                    HStack(spacing: 16) {
+                                        Text("\(pair.moveNumber)")
+                                            .font(.system(size: 17))
+                                            .foregroundColor(.white.opacity(0.7))
+                                            .frame(width: 45)
+                                        
+                                        // White move
+                                        HStack(spacing: 8) {
+                                            if let whiteMove = pair.white, let icon = pieceIcon(from: whiteMove, color: .white) {
+                                                Image(icon)
+                                                    .resizable()
+                                                    .frame(width: 24, height: 24)
+                                            }
+                                            Text(pair.white ?? "")
                                                 .font(.system(size: 17))
-                                                .foregroundColor(.white.opacity(0.7))
-                                                .frame(width: 45)
-                                            
-                                            // White move
-                                            HStack(spacing: 8) {
-                                                if let whiteMove = pair.white, let icon = pieceIcon(from: whiteMove, color: .white) {
-                                                    Image(icon)
-                                                        .resizable()
-                                                        .frame(width: 24, height: 24)
-                                                }
-                                                Text(pair.white ?? "")
-                                                    .font(.system(size: 17))
-                                                    .foregroundColor(.white)
-                                            }
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            
-                                            // Black move
-                                            HStack(spacing: 8) {
-                                                if let blackMove = pair.black, let icon = pieceIcon(from: blackMove, color: .black) {
-                                                    Image(icon)
-                                                        .resizable()
-                                                        .frame(width: 24, height: 24)
-                                                }
-                                                Text(pair.black ?? "")
-                                                    .font(.system(size: 17))
-                                                    .foregroundColor(.white)
-                                            }
-                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                                .foregroundColor(.white)
                                         }
-                                        .padding(.horizontal, 24)
-                                        .padding(.vertical, 12)
-                                        .background(pair.moveNumber % 2 == 0 ? Color.white.opacity(0.05) : Color.clear)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        
+                                        // Black move
+                                        HStack(spacing: 8) {
+                                            if let blackMove = pair.black, let icon = pieceIcon(from: blackMove, color: .black) {
+                                                Image(icon)
+                                                    .resizable()
+                                                    .frame(width: 24, height: 24)
+                                            }
+                                            Text(pair.black ?? "")
+                                                .font(.system(size: 17))
+                                                .foregroundColor(.white)
+                                        }
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                     }
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 12)
+                                    .background(pair.moveNumber % 2 == 0 ? Color.white.opacity(0.05) : Color.clear)
                                 }
-                                .frame(width: scrollGeo.size.width) // Ancho fijo para evitar warnings
                             }
                         }
                     }
-                    .frame(width: sidebarWidth, height: screenHeight - 40) // <- ALTURA DEFINIDA
+                    .frame(width: sidebarWidth)
+                    .frame(maxHeight: .infinity)
                     .background(Color.black.opacity(0.3))
                     .cornerRadius(18)
                     .shadow(color: .black.opacity(0.4), radius: 12)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
+            }
+        }
+        .onAppear {
+            voiceManager.game = game
+            voiceManager.requestPermission { granted in
+                if granted {
+                    print("✅ Voice control ready")
+                }
             }
         }
         .onChange(of: game.lastMoveDescription) { description in

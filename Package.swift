@@ -19,7 +19,7 @@ let package = Package(
             bundleIdentifier: "DiegoGarcia.MovesDiego",
             teamIdentifier: "84SD3C8868",
             bundleVersion: "1",
-            appIcon: .placeholder(icon: .bowl),
+            appIcon: .asset("AppIcon"),
             accentColor: .presetColor(.cyan),
             supportedDeviceFamilies: [
                 .pad,
@@ -32,7 +32,10 @@ let package = Package(
                 .portraitUpsideDown(.when(deviceFamilies: [.pad]))
             ],
             capabilities: [
-                .outgoingNetworkConnections()
+                .outgoingNetworkConnections(),
+                .microphone(purposeString: "MOVES needs microphone for voice chess commands"),
+                .speechRecognition(purposeString: "MOVES uses voice to enter chess moves like \"e4\""),
+                .incomingNetworkConnections()
             ]
         )
     ],

@@ -2,9 +2,8 @@
 //  SoundManager.swift
 //  MovesDiego
 //
-//  Created by Mariana G on 05/02/26.
+//  Created by Diego García
 //
-
 
 import AVFoundation
 
