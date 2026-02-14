@@ -1,27 +1,14 @@
-//
-//  SpeechManager.swift
-//  MovesDiego
-//
-//
-//  Created by Diego García
-//
-
 import AVFoundation
-import SwiftUI
-import Combine
+import Foundation
 
-class SpeechManager: NSObject, ObservableObject, AVSpeechSynthesizerDelegate, @unchecked Sendable {
-    let synthesizer = AVSpeechSynthesizer()
-    
-    override init() {
-        super.init()
-        synthesizer.delegate = self
-    }
-    
+class SpeechManager: ObservableObject {
+    private let synthesizer = AVSpeechSynthesizer()
+
     func speak(_ text: String) {
         let utterance = AVSpeechUtterance(string: text)
-        utterance.rate = 0.45
+        // Voz en inglés (para que suene natural con notación inglesa)
         utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
+        utterance.rate = 0.45
         synthesizer.speak(utterance)
     }
 }

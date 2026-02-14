@@ -6,19 +6,9 @@
 	<string>MOVES</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.example.moves</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>MOVES uses voice to enter chess moves like &quot;e4&quot;</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>MOVES needs microphone for voice chess commands</string>
-	<key>UISupportedInterfaceOrientations</key>
-	<array>
-		<string>Portrait
-Portrait
-</string>
-	</array>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>audio</string>
-	</array>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>MOVES uses voice to enter chess moves like &quot;e4&quot;</string>
 </dict>
 </plist>
