@@ -38,20 +38,20 @@ class VoiceInputManager: NSObject, ObservableObject {
         SFSpeechRecognizer.requestAuthorization { status in
             Task { @MainActor in
                 switch status {
-                case .authorized: 
+                case .authorized:
                     self.errorMessage = ""
                     self.requestMicrophonePermission()
-                case .denied: 
+                case .denied:
                     self.errorMessage = "Speech permission denied"
-                case .restricted, .notDetermined: 
+                case .restricted, .notDetermined:
                     self.errorMessage = "Speech not available"
-                @unknown default: 
+                @unknown default:
                     self.errorMessage = "Unknown error"
                 }
             }
         }
     }
-    
+
     nonisolated private func requestMicrophonePermission() {
         AVAudioSession.sharedInstance().requestRecordPermission { granted in
             Task { @MainActor in
@@ -63,21 +63,21 @@ class VoiceInputManager: NSObject, ObservableObject {
     }
 
     func startListening() {
-        if isListening { 
+        if isListening {
             stopListening()
-            return 
+            return
         }
-        
+
         guard let recognizer = recognizer, recognizer.isAvailable else {
             errorMessage = "Speech recognizer not available"
             return
         }
-        
+
         guard SFSpeechRecognizer.authorizationStatus() == .authorized else {
             errorMessage = "Speech recognition not authorized"
             return
         }
-        
+
         let audioSession = AVAudioSession.sharedInstance()
         guard audioSession.recordPermission == .granted else {
             errorMessage = "Microphone permission required"
@@ -86,39 +86,36 @@ class VoiceInputManager: NSObject, ObservableObject {
 
         errorMessage = ""
         recognizedText = "Listening..."
-        
-        // TODO en background thread para evitar crash en MainActor
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
-            
-            do {
-                try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.duckOthers, .defaultToSpeaker])
-                try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-                self.setupRecognitionSync(with: recognizer)
-            } catch {
-                DispatchQueue.main.async {
-                    self.errorMessage = "Audio error: \(error.localizedDescription)"
-                }
-            }
-        }
-    }
-    
-    private func setupRecognitionSync(with recognizer: SFSpeechRecognizer) {
-        self.request = SFSpeechAudioBufferRecognitionRequest()
-        
-        guard let request = self.request else {
-            DispatchQueue.main.async {
-                self.errorMessage = "Could not create request"
-            }
-            return 
+
+        do {
+            try audioSession.setCategory(.playAndRecord, mode: .measurement, options: [.duckOthers, .defaultToSpeaker])
+            try audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+        } catch {
+            errorMessage = "Audio error: \(error.localizedDescription)"
+            return
         }
 
-        let inputNode = self.audioEngine.inputNode
+        request = SFSpeechAudioBufferRecognitionRequest()
+
+        guard let request = request else {
+            errorMessage = "Could not create request"
+            return
+        }
+
         request.shouldReportPartialResults = true
 
-        self.recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
+        let inputNode = audioEngine.inputNode
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+
+        // Validate the audio format — a zero sample rate means no mic input is available
+        guard recordingFormat.sampleRate > 0 else {
+            errorMessage = "No audio input available"
+            return
+        }
+
+        recognitionTask = recognizer.recognitionTask(with: request) { [weak self] result, error in
             guard let self = self else { return }
-            
+
             DispatchQueue.main.async {
                 if let result = result {
                     self.recognizedText = result.bestTranscription.formattedString
@@ -127,9 +124,10 @@ class VoiceInputManager: NSObject, ObservableObject {
                         self.stopListening()
                     }
                 }
-                
+
                 if let error = error {
                     let nsError = error as NSError
+                    // 203 = no speech detected timeout, 1700 = recognition cancelled
                     if nsError.code != 203 && nsError.code != 1700 {
                         self.errorMessage = "Error: \(nsError.localizedDescription)"
                     }
@@ -138,41 +136,39 @@ class VoiceInputManager: NSObject, ObservableObject {
             }
         }
 
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
         inputNode.removeTap(onBus: 0)
         inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, _ in
             self?.request?.append(buffer)
         }
 
-        self.audioEngine.prepare()
+        audioEngine.prepare()
         do {
-            try self.audioEngine.start()
-            DispatchQueue.main.async {
-                self.isListening = true
-            }
+            try audioEngine.start()
+            isListening = true
         } catch {
-            DispatchQueue.main.async {
-                self.errorMessage = "Could not start: \(error.localizedDescription)"
-                self.stopListening()
-            }
+            errorMessage = "Could not start: \(error.localizedDescription)"
+            cleanupResources()
         }
     }
 
     func stopListening() {
-        guard isListening else { return }
-        
+        cleanupResources()
+    }
+
+    /// Unconditionally tears down audio engine, recognition task and request.
+    private func cleanupResources() {
         if audioEngine.isRunning {
             audioEngine.stop()
-            audioEngine.inputNode.removeTap(onBus: 0)
         }
-        
+        audioEngine.inputNode.removeTap(onBus: 0)
+
         request?.endAudio()
         recognitionTask?.cancel()
-        
+
         request = nil
         recognitionTask = nil
         isListening = false
-        
+
         Task.detached {
             try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         }
@@ -194,7 +190,7 @@ class VoiceInputManager: NSObject, ObservableObject {
             .replacingOccurrences(of: "-", with: " ")
 
         let squares = extractSquares(from: lower)
-        
+
         guard squares.count >= 2 else {
             errorMessage = "Say: \"e2 e4\""
             return
@@ -205,7 +201,7 @@ class VoiceInputManager: NSObject, ObservableObject {
 
         let success = game.moveFrom(file: from.file, rank: from.rank,
                                     toFile: to.file, rank: to.rank)
-        if !success { 
+        if !success {
             errorMessage = "Illegal move"
         }
     }
