@@ -807,5 +807,33 @@ public class ChessGame: ObservableObject {
         return files[col]
     }
 
+    /// Converts voice input coordinates (file letter + rank number) to board positions and executes the move.
+    /// - Returns: `true` if the move was executed successfully.
+    func moveFrom(file fromFile: String, rank fromRank: Int, toFile: String, rank toRank: Int) -> Bool {
+        let files = ["a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7]
+
+        guard let fromCol = files[fromFile], let toCol = files[toFile] else { return false }
+
+        let fromRow = fromRank - 1 // voice says rank 1-8, board index 0-7
+        let toRow = toRank - 1
+
+        guard isValidPosition(fromRow, fromCol), isValidPosition(toRow, toCol) else { return false }
+
+        guard let piece = board[fromRow][fromCol], piece.color == currentPlayer else { return false }
+
+        // Select the piece and calculate legal moves
+        selectPiece(at: (fromRow, fromCol))
+
+        // Check if target is in the list of legal moves
+        guard possibleMoves.contains(where: { $0 == (toRow, toCol) }) else {
+            selectedPiece = nil
+            possibleMoves = []
+            return false
+        }
+
+        // Execute the move
+        return movePiece(to: (toRow, toCol))
+    }
+
 }
 

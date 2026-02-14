@@ -431,11 +431,6 @@ public struct ChessView: View {
         }
         .onAppear {
             voiceManager.game = game
-            voiceManager.requestPermission { granted in
-                if granted {
-                    print("✅ Voice control ready")
-                }
-            }
         }
         .onChange(of: game.lastMoveDescription) { description in
             if !description.isEmpty {
