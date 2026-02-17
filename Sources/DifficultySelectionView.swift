@@ -9,59 +9,85 @@ import SwiftUI
 
 struct DifficultySelectionView: View {
     @Binding var selectedDifficulty: DifficultyLevel
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) var dismiss
+
+    private let bg = Color(red: 0.10, green: 0.10, blue: 0.14)
 
     var body: some View {
-        VStack {
-            Text("Select your opponent's difficulty")
-                .font(.headline)
-                .padding()
+        ZStack {
+            bg.ignoresSafeArea()
 
-            HStack(spacing: 20) {
-                // Easy
-                VStack {
-                    Button(action: {
-                        selectedDifficulty = .easy
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image("pawn_black")
-                            .resizable()
-                            .frame(width: 60, height: 60)
-                    }
-                    Text("Easy")
-                        .font(.subheadline)
+            VStack(spacing: 28) {
+                VStack(spacing: 8) {
+                    Text("Choose Difficulty")
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text("Select your opponent's strength")
+                        .font(.system(size: 15))
+                        .foregroundColor(.white.opacity(0.45))
                 }
 
-                // Medium
-                VStack {
-                    Button(action: {
-                        selectedDifficulty = .medium
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image("knight_black")
-                            .resizable()
-                            .frame(width: 60, height: 60)
-                    }
-                    Text("Medium")
-                        .font(.subheadline)
-                }
-
-                // Hard
-                VStack {
-                    Button(action: {
-                        selectedDifficulty = .hard
-                        presentationMode.wrappedValue.dismiss()
-                    }) {
-                        Image("queen_black")
-                            .resizable()
-                            .frame(width: 60, height: 60)
-                    }
-                    Text("Hard")
-                        .font(.subheadline)
+                HStack(spacing: 20) {
+                    difficultyCard(
+                        level: .easy,
+                        icon: "pawn_black",
+                        title: "Easy",
+                        subtitle: "Random moves",
+                        accent: Color.green
+                    )
+                    difficultyCard(
+                        level: .medium,
+                        icon: "knight_black",
+                        title: "Medium",
+                        subtitle: "Strategic play",
+                        accent: Color.orange
+                    )
+                    difficultyCard(
+                        level: .hard,
+                        icon: "queen_black",
+                        title: "Hard",
+                        subtitle: "Expert AI",
+                        accent: Color.red
+                    )
                 }
             }
-            .padding()
+            .padding(40)
+        }
+    }
+
+    private func difficultyCard(
+        level: DifficultyLevel,
+        icon: String,
+        title: String,
+        subtitle: String,
+        accent: Color
+    ) -> some View {
+        Button {
+            selectedDifficulty = level
+            dismiss()
+        } label: {
+            VStack(spacing: 14) {
+                Image(icon)
+                    .resizable()
+                    .frame(width: 64, height: 64)
+
+                Text(title)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundColor(.white.opacity(0.4))
+            }
+            .padding(.horizontal, 28)
+            .padding(.vertical, 24)
+            .background(Color.white.opacity(0.06))
+            .cornerRadius(16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(accent.opacity(0.25), lineWidth: 1)
+            )
         }
     }
 }
-

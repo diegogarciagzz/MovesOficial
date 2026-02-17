@@ -9,76 +9,58 @@ import SwiftUI
 import Foundation
 
 struct PromotionView: View {
-    @Environment(\.dismiss) var dismiss // <- AGREGA ESTO
+    @Environment(\.dismiss) var dismiss
     @ObservedObject var game: ChessGame
-    
+
+    private let bg = Color(red: 0.10, green: 0.10, blue: 0.14)
+
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Promote Your Pawn")
-                .font(.title)
-                .fontWeight(.bold)
-            
-            Text("Choose a piece:")
-                .font(.headline)
-            
-            HStack(spacing: 30) {
-                Button(action: {
-                    game.promotePawn(to: .queen)
-                    dismiss() // <- AGREGA ESTO
-                }) {
-                    VStack {
-                        Image("queen_white")
-                            .resizable()
-                            .frame(width: 80, height: 80)
-                        Text("Queen")
-                            .font(.caption)
-                    }
+        ZStack {
+            bg.ignoresSafeArea()
+
+            VStack(spacing: 24) {
+                VStack(spacing: 8) {
+                    Text("Promote Your Pawn")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+
+                    Text("Choose a piece")
+                        .font(.system(size: 15))
+                        .foregroundColor(.white.opacity(0.45))
                 }
-                
-                Button(action: {
-                    game.promotePawn(to: .rook)
-                    dismiss() // <- AGREGA ESTO
-                }) {
-                    VStack {
-                        Image("rook_white")
-                            .resizable()
-                            .frame(width: 80, height: 80)
-                        Text("Rook")
-                            .font(.caption)
-                    }
-                }
-                
-                Button(action: {
-                    game.promotePawn(to: .bishop)
-                    dismiss() // <- AGREGA ESTO
-                }) {
-                    VStack {
-                        Image("bishop_white")
-                            .resizable()
-                            .frame(width: 80, height: 80)
-                        Text("Bishop")
-                            .font(.caption)
-                    }
-                }
-                
-                Button(action: {
-                    game.promotePawn(to: .knight)
-                    dismiss() // <- AGREGA ESTO
-                }) {
-                    VStack {
-                        Image("knight_white")
-                            .resizable()
-                            .frame(width: 80, height: 80)
-                        Text("Knight")
-                            .font(.caption)
-                    }
+
+                HStack(spacing: 18) {
+                    promotionButton(type: .queen, icon: "queen_white", label: "Queen")
+                    promotionButton(type: .rook, icon: "rook_white", label: "Rook")
+                    promotionButton(type: .bishop, icon: "bishop_white", label: "Bishop")
+                    promotionButton(type: .knight, icon: "knight_white", label: "Knight")
                 }
             }
-            .padding()
+            .padding(40)
         }
-        .padding(40)
-        .background(Color.white)
-        .cornerRadius(20)
-        .shadow(radius: 10)
+    }
+
+    private func promotionButton(type: PieceType, icon: String, label: String) -> some View {
+        Button {
+            game.promotePawn(to: type)
+            dismiss()
+        } label: {
+            VStack(spacing: 10) {
+                Image(icon)
+                    .resizable()
+                    .frame(width: 64, height: 64)
+
+                Text(label)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white)
+            }
+            .padding(20)
+            .background(Color.white.opacity(0.06))
+            .cornerRadius(14)
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+            )
+        }
     }
 }
