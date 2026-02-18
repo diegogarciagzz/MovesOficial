@@ -139,51 +139,106 @@ public struct ChessView: View {
                         }
                         .padding(.bottom, 8)
                         
-                        // 🎤 BOTÓN DE VOZ GRANDE
-                        Button(action: {
-                            voiceManager.startListening()
-                        }) {
-                            HStack(spacing: 12) {
-                                Image(systemName: voiceManager.isListening ? "mic.fill" : "mic")
-                                    .font(.system(size: 24, weight: .bold))
-                                
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(voiceManager.isListening ? "Listening..." : "Voice Control")
-                                        .font(.system(size: 18, weight: .semibold))
-                                    
-                                    if !voiceManager.recognizedText.isEmpty {
-                                        Text(voiceManager.recognizedText)
-                                            .font(.system(size: 12))
-                                            .lineLimit(1)
-                                    }
+                        // 🎤 BOTÓN DE VOZ MEJORADO ✅ CORREGIDO
+                        VStack(spacing: 8) {
+                            Button(action: {
+                                // ✅ Solo escucha si hay permisos
+                                if permissions.speechAuthorized && permissions.microphoneAuthorized {
+                                    voiceManager.startListening()
+                                } else {
+                                    voiceManager.errorMessage = "Enable Speech & Mic in Settings"
                                 }
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 14)
-                            .frame(maxWidth: boardSize)
-                            .background(
-                                voiceManager.isListening ?
-                                LinearGradient(colors: [Color.red, Color.red.opacity(0.8)], startPoint: .leading, endPoint: .trailing) :
-                                LinearGradient(colors: [Color.blue, Color.blue.opacity(0.8)], startPoint: .leading, endPoint: .trailing)
-                            )
-                            .cornerRadius(12)
-                            .shadow(color: voiceManager.isListening ? .red.opacity(0.5) : .blue.opacity(0.4), radius: 10)
-                        }
-                        .accessibilityLabel(voiceManager.isListening ? "Stop listening" : "Start voice control")
-                        .padding(.bottom, 12)
-                        
-                        // Error message si existe
-                        if !voiceManager.errorMessage.isEmpty {
-                            Text(voiceManager.errorMessage)
-                                .font(.system(size: 14))
-                                .foregroundColor(.red)
+                            }) {
+                                HStack(spacing: 12) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(voiceManager.isListening ? Color.red.opacity(0.2) : Color.blue.opacity(0.2))
+                                            .frame(width: 50, height: 50)
+                                        
+                                        Image(systemName: voiceManager.isListening ? "mic.fill" : "mic")
+                                            .font(.system(size: 24, weight: .bold))
+                                            .scaleEffect(voiceManager.isListening ? 1.1 : 1.0)
+                                            .animation(voiceManager.isListening ? .easeInOut(duration: 0.8).repeatForever(autoreverses: true) : .default, value: voiceManager.isListening)
+                                    }
+                                    
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(voiceManager.isListening ? "Listening..." : "Voice Control")
+                                            .font(.system(size: 18, weight: .semibold))
+                                        
+                                        Text(voiceManager.isListening ? "Tap to stop" : "Say your move")
+                                            .font(.system(size: 12))
+                                            .opacity(0.8)
+                                        
+                                        if !voiceManager.recognizedText.isEmpty && voiceManager.isListening {
+                                            Text(voiceManager.recognizedText)
+                                                .font(.system(size: 13, weight: .medium))
+                                                .lineLimit(1)
+                                                .opacity(0.9)
+                                        }
+                                    }
+                                    
+                                    Spacer()
+                                }
+                                .foregroundColor(.white)
                                 .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                                .frame(maxWidth: boardSize)
+                                .background(
+                                    voiceManager.isListening ?
+                                    LinearGradient(colors: [Color.red, Color.red.opacity(0.7)], startPoint: .leading, endPoint: .trailing) :
+                                    LinearGradient(colors: [Color.blue, Color.blue.opacity(0.7)], startPoint: .leading, endPoint: .trailing)
+                                )
+                                .cornerRadius(14)
+                                .shadow(color: voiceManager.isListening ? .red.opacity(0.6) : .blue.opacity(0.5), radius: 12)
+                            }
+                            // ✅ Deshabilitado si no hay permisos
+                            .disabled(!permissions.speechAuthorized || !permissions.microphoneAuthorized)
+                            .accessibilityLabel(voiceManager.isListening ? "Stop listening" : "Start voice control. Say moves like e2 to e4")
+                            .accessibilityHint("Activates voice recognition for chess moves")
+                            
+                            // Error o instrucciones
+                            if !voiceManager.errorMessage.isEmpty {
+                                HStack(spacing: 8) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 14))
+                                    Text(voiceManager.errorMessage)
+                                        .font(.system(size: 14, weight: .medium))
+                                }
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .frame(maxWidth: boardSize)
+                                .background(Color.red.opacity(0.7))
+                                .cornerRadius(10)
+                            } else if !voiceManager.isListening && (!permissions.speechAuthorized || !permissions.microphoneAuthorized) {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "info.circle.fill")
+                                        .font(.system(size: 12))
+                                    Text("Enable Speech & Mic in Settings")
+                                        .font(.system(size: 13))
+                                }
+                                .foregroundColor(.white.opacity(0.7))
+                                .padding(.horizontal, 16)
                                 .padding(.vertical, 8)
-                                .background(Color.red.opacity(0.2))
+                                .frame(maxWidth: boardSize)
+                                .background(Color.white.opacity(0.1))
                                 .cornerRadius(8)
-                                .frame(width: boardSize)
+                            } else if !voiceManager.isListening {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "info.circle.fill")
+                                        .font(.system(size: 12))
+                                    Text("Example: \"e2 to e4\"")
+                                        .font(.system(size: 13))
+                                }
+                                .foregroundColor(.white.opacity(0.7))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .frame(maxWidth: boardSize)
+                                .background(Color.white.opacity(0.1))
+                                .cornerRadius(8)
+                            }
                         }
+                        .padding(.bottom, 12)
                         
                         // Chess Board
                         VStack(spacing: 0) {
@@ -244,24 +299,48 @@ public struct ChessView: View {
                         .frame(width: boardSize, height: boardSize)
                         .shadow(color: .black.opacity(0.3), radius: 10)
                         
-                        // Captured Pieces & Material Balance
-                        VStack(spacing: 14) {
-                            // White's captured pieces
-                            HStack(spacing: 8) {
-                                Text("You:")
-                                    .font(.system(size: 18, weight: .semibold))
+                        // Captured Pieces & Material Balance - MEJORADO
+                        VStack(spacing: 0) {
+                            // Header
+                            HStack {
+                                Text("Captured Pieces")
+                                    .font(.system(size: 16, weight: .bold))
                                     .foregroundColor(.white.opacity(0.9))
-                                    .frame(width: 65, alignment: .leading)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.top, 14)
+                            .padding(.bottom, 10)
+                            
+                            Divider()
+                                .background(Color.white.opacity(0.2))
+                                .padding(.horizontal, 20)
+                            
+                            // White's captured pieces
+                            HStack(spacing: 10) {
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(Color.white)
+                                        .frame(width: 10, height: 10)
+                                    Text("You")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.white)
+                                }
+                                .frame(width: 70, alignment: .leading)
                                 
                                 if game.capturedByWhite.isEmpty {
                                     Text("—")
-                                        .font(.system(size: 18))
+                                        .font(.system(size: 16))
                                         .foregroundColor(.white.opacity(0.4))
                                 } else {
-                                    ForEach(game.capturedByWhite, id: \.self) { type in
-                                        Image("\(type.rawValue)_black")
-                                            .resizable()
-                                            .frame(width: 28, height: 28)
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 6) {
+                                            ForEach(game.capturedByWhite, id: \.self) { type in
+                                                Image("\(type.rawValue)_black")
+                                                    .resizable()
+                                                    .frame(width: 30, height: 30)
+                                            }
+                                        }
                                     }
                                 }
                                 
@@ -269,31 +348,49 @@ public struct ChessView: View {
                                 
                                 if materialBalance > 0 {
                                     Text("+\(materialBalance)")
-                                        .font(.system(size: 18, weight: .bold))
+                                        .font(.system(size: 16, weight: .bold))
                                         .foregroundColor(.green)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 5)
-                                        .background(Color.green.opacity(0.2))
-                                        .cornerRadius(8)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            Capsule()
+                                                .fill(Color.green.opacity(0.25))
+                                        )
                                 }
                             }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            
+                            Divider()
+                                .background(Color.white.opacity(0.1))
+                                .padding(.horizontal, 20)
                             
                             // Black's captured pieces
-                            HStack(spacing: 8) {
-                                Text("AI:")
-                                    .font(.system(size: 18, weight: .semibold))
-                                    .foregroundColor(.white.opacity(0.9))
-                                    .frame(width: 65, alignment: .leading)
+                            HStack(spacing: 10) {
+                                HStack(spacing: 4) {
+                                    Circle()
+                                        .fill(Color.black.opacity(0.8))
+                                        .frame(width: 10, height: 10)
+                                        .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 1))
+                                    Text("AI")
+                                        .font(.system(size: 16, weight: .semibold))
+                                        .foregroundColor(.white)
+                                }
+                                .frame(width: 70, alignment: .leading)
                                 
                                 if game.capturedByBlack.isEmpty {
                                     Text("—")
-                                        .font(.system(size: 18))
+                                        .font(.system(size: 16))
                                         .foregroundColor(.white.opacity(0.4))
                                 } else {
-                                    ForEach(game.capturedByBlack, id: \.self) { type in
-                                        Image("\(type.rawValue)_white")
-                                            .resizable()
-                                            .frame(width: 28, height: 28)
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 6) {
+                                            ForEach(game.capturedByBlack, id: \.self) { type in
+                                                Image("\(type.rawValue)_white")
+                                                    .resizable()
+                                                    .frame(width: 30, height: 30)
+                                            }
+                                        }
                                     }
                                 }
                                 
@@ -301,20 +398,29 @@ public struct ChessView: View {
                                 
                                 if materialBalance < 0 {
                                     Text("+\(abs(materialBalance))")
-                                        .font(.system(size: 18, weight: .bold))
+                                        .font(.system(size: 16, weight: .bold))
                                         .foregroundColor(.red)
-                                        .padding(.horizontal, 10)
-                                        .padding(.vertical, 5)
-                                        .background(Color.red.opacity(0.2))
-                                        .cornerRadius(8)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            Capsule()
+                                                .fill(Color.red.opacity(0.25))
+                                        )
                                 }
                             }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .padding(.bottom, 4)
                         }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 16)
                         .frame(width: boardSize)
-                        .background(Color.white.opacity(0.1))
-                        .cornerRadius(14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.white.opacity(0.08))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        )
                         
                         // Reset button
                         if showResetButton {
@@ -431,7 +537,17 @@ public struct ChessView: View {
         }
         .onAppear {
             voiceManager.game = game
+            
+            // Check if permissions already granted
+            let perms = PermissionsManager.shared.checkPermissions()
+            if !perms.speech || !perms.mic {
+                print("⚠️ Missing permissions, please enable in Settings")
+            }
         }
+        .onDisappear {
+            voiceManager.stopListening()
+        }
+
         .onChange(of: game.lastMoveDescription) { description in
             if !description.isEmpty {
                 speaker.speak(description)

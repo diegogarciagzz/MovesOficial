@@ -1,8 +1,11 @@
 import SwiftUI
 import AVFoundation
+import Speech
 
 struct ContentView: View {
-    @State private var synthesizer = AVSpeechSynthesizer()
+    @State private var speechAuthorized = false
+    @State private var microphoneAuthorized = false
+    @State private var permissionsRequested = false
     
     var body: some View {
         NavigationStack {
@@ -26,6 +29,20 @@ struct ContentView: View {
                         .foregroundColor(.gray)
                         .padding(.horizontal)
                     
+                    if speechAuthorized && microphoneAuthorized {
+                        HStack(spacing: 12) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text("Voice Control Ready")
+                                .foregroundColor(.white.opacity(0.8))
+                                .font(.subheadline)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                        .background(Color.green.opacity(0.2))
+                        .cornerRadius(10)
+                    }
+                    
                     NavigationLink(destination: ChessView().navigationBarBackButtonHidden(true)) {
                         Text("Play Accessible Chess")
                             .font(.title2.weight(.semibold))
@@ -36,23 +53,29 @@ struct ContentView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 25))
                             .shadow(color: .blue.opacity(0.5), radius: 20)
                     }
-                    .simultaneousGesture(TapGesture().onEnded {
-                        speak("Welcome to MOVES. Enable VoiceOver to hear board and moves.")
-                    })
                 }
-                .accessibilityLabel("MOVES accessible chess app. Toca Play para comenzar.")
+                .accessibilityLabel("MOVES accessible chess app")
             }
             .navigationBarHidden(true)
             .onAppear {
-                speak("MOVES loaded. Passionate chess for blind players.")
+                if !permissionsRequested {
+                    permissionsRequested = true
+                    
+                    // Delay para asegurar que SwiftUI esté listo
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        requestPermissions()
+                    }
+                }
             }
         }
     }
     
-    func speak(_ text: String) {
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.rate = 0.5
-        utterance.voice = AVSpeechSynthesisVoice(language: "en-US")
-        synthesizer.speak(utterance)
-    }
-}
+    func requestPermissions() {
+        PermissionsManager.shared.requestPermissions { speech, mic in
+            Task { @MainActor in
+                self.speechAuthorized = speech
+                self.microphoneAuthorized = mic
+                print("✅ Permissions updated in UI")
+            }
+        }
+    }}

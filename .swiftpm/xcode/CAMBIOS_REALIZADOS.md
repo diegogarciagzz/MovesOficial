@@ -43,10 +43,11 @@ guard let audioEngine = audioEngine else {
 
 ##### 🎤 Botón de Voice Control Mejorado:
 - ✅ **Diseño más profesional**: Círculo animado con el ícono del micrófono
-- ✅ **Animación de pulso**: Efecto `.symbolEffect(.pulse)` cuando está escuchando
+- ✅ **Animación de pulso**: Efecto `.scaleEffect` con animación repetida cuando está escuchando (compatible iOS 15+)
 - ✅ **Mejor feedback**: Muestra "Tap to stop" vs "Say your move"
 - ✅ **Texto reconocido visible**: Muestra lo que está escuchando en tiempo real
 - ✅ **Accesibilidad mejorada**: Labels y hints más descriptivos
+- ✅ **Compatible con iOS 15+**: Sin usar APIs exclusivas de iOS 17
 
 ##### 📦 Sección de Piezas Capturadas Mejorada:
 - ✅ **Diseño tipo card**: Header separado con título
@@ -196,3 +197,4 @@ El problema principal era que `AVAudioEngine` estaba marcado como `nonisolated(u
 ## 🎉 ¡Listo para usar!
 
 Todos los cambios están implementados y el código está optimizado. La app ahora es más estable, más bonita y más fácil de usar. 🚀
+
