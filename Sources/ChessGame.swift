@@ -38,7 +38,7 @@ struct PromotionPending: Equatable {
     }
 }
 
-public class ChessGame: ObservableObject {
+public class ChessGame: ObservableObject, @unchecked Sendable {
     @Published var board: [[ChessPiece?]] = Array(repeating: Array(repeating: nil, count: 8), count: 8)
     @Published var selectedPiece: ChessPiece?
     @Published var possibleMoves: [(Int, Int)] = []

@@ -7,7 +7,7 @@ import Foundation
 import Speech
 import AVFoundation
 
-class VoiceInputManager: ObservableObject {
+class VoiceInputManager: ObservableObject, @unchecked Sendable {
     @Published var isListening: Bool = false
     @Published var recognizedText: String = ""
     @Published var errorMessage: String = ""
