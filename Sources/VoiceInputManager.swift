@@ -120,15 +120,20 @@ class VoiceInputManager: ObservableObject {
     private func stopRecognitionSync() {
         recognitionTask?.cancel()
         recognitionTask = nil
-        
+
         recognitionRequest?.endAudio()
         recognitionRequest = nil
-        
-        audioEngine?.stop()
-        audioEngine?.inputNode.removeTap(onBus: 0)
+
+        // Remove tap BEFORE stopping the engine to avoid a race condition
+        // between the audio render thread and engine teardown, which causes
+        // a crash on RealtimeMessenger.mServiceQueue.
+        if let engine = audioEngine {
+            engine.inputNode.removeTap(onBus: 0)
+            engine.stop()
+        }
         audioEngine = nil
-        
-        try? AVAudioSession.sharedInstance().setActive(false)
+
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
     
     private func processVoiceCommand(_ text: String) {

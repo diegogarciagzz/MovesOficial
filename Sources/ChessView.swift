@@ -18,6 +18,8 @@ public struct ChessView: View {
     @State private var selectedDifficulty: DifficultyLevel = .easy
     @StateObject private var speaker = SpeechManager()
     @StateObject private var voiceManager = VoiceInputManager()
+    @State private var speechAuthorized = false
+    @State private var microphoneAuthorized = false
 
     public init() {
         _game = StateObject(wrappedValue: ChessGame(difficulty: .easy))
@@ -143,7 +145,7 @@ public struct ChessView: View {
                         VStack(spacing: 8) {
                             Button(action: {
                                 // ✅ Solo escucha si hay permisos
-                                if permissions.speechAuthorized && permissions.microphoneAuthorized {
+                                if speechAuthorized && microphoneAuthorized {
                                     voiceManager.startListening()
                                 } else {
                                     voiceManager.errorMessage = "Enable Speech & Mic in Settings"
@@ -192,7 +194,7 @@ public struct ChessView: View {
                                 .shadow(color: voiceManager.isListening ? .red.opacity(0.6) : .blue.opacity(0.5), radius: 12)
                             }
                             // ✅ Deshabilitado si no hay permisos
-                            .disabled(!permissions.speechAuthorized || !permissions.microphoneAuthorized)
+                            .disabled(!speechAuthorized || !microphoneAuthorized)
                             .accessibilityLabel(voiceManager.isListening ? "Stop listening" : "Start voice control. Say moves like e2 to e4")
                             .accessibilityHint("Activates voice recognition for chess moves")
                             
@@ -210,7 +212,7 @@ public struct ChessView: View {
                                 .frame(maxWidth: boardSize)
                                 .background(Color.red.opacity(0.7))
                                 .cornerRadius(10)
-                            } else if !voiceManager.isListening && (!permissions.speechAuthorized || !permissions.microphoneAuthorized) {
+                            } else if !voiceManager.isListening && (!speechAuthorized || !microphoneAuthorized) {
                                 HStack(spacing: 6) {
                                     Image(systemName: "info.circle.fill")
                                         .font(.system(size: 12))
@@ -537,9 +539,10 @@ public struct ChessView: View {
         }
         .onAppear {
             voiceManager.game = game
-            
-            // Check if permissions already granted
+
             let perms = PermissionsManager.shared.checkPermissions()
+            speechAuthorized = perms.speech
+            microphoneAuthorized = perms.mic
             if !perms.speech || !perms.mic {
                 print("⚠️ Missing permissions, please enable in Settings")
             }
