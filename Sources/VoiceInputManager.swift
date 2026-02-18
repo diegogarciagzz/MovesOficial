@@ -7,6 +7,57 @@ import Foundation
 import Speech
 import AVFoundation
 
+// Events forwarded from the delegate (background queue) to the main actor.
+// All cases are Sendable because they only contain String values.
+private enum SpeechEvent: Sendable {
+    case hypothesis(String)
+    case finalResult(String)
+    case error
+}
+
+// ── Recognition Delegate ────────────────────────────────────────────────
+// Same pattern as the friend's PlaybackDelegate:
+//   - NSObject subclass (required by @objc delegate protocols)
+//   - @unchecked Sendable (NOT @MainActor — lives on whatever queue the
+//     Speech framework uses, i.e. RealtimeMessenger.mServiceQueue)
+//   - Holds only a Sendable continuation — no @MainActor state
+//   - Forwards events through the AsyncStream; the main actor drains it
+//
+// Using recognitionTask(with:delegate:) instead of the closure version
+// completely eliminates the @Sendable closure that caused the crash.
+// ─────────────────────────────────────────────────────────────────────────
+private final class RecognitionDelegate: NSObject, SFSpeechRecognitionTaskDelegate, @unchecked Sendable {
+    let continuation: AsyncStream<SpeechEvent>.Continuation
+
+    init(continuation: AsyncStream<SpeechEvent>.Continuation) {
+        self.continuation = continuation
+        super.init()
+    }
+
+    // Called repeatedly with partial transcriptions
+    func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didHypothesizeTranscription transcription: SFTranscription) {
+        continuation.yield(.hypothesis(transcription.formattedString))
+    }
+
+    // Called once with the final recognized result
+    func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishRecognition recognitionResult: SFSpeechRecognitionResult) {
+        continuation.yield(.finalResult(recognitionResult.bestTranscription.formattedString))
+    }
+
+    // Called when the task ends (successfully or not)
+    func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishSuccessfully successfully: Bool) {
+        if !successfully {
+            continuation.yield(.error)
+        }
+        continuation.finish()
+    }
+
+    // Called if the task was cancelled (e.g. from stopListening)
+    func speechRecognitionTaskWasCancelled(_ task: SFSpeechRecognitionTask) {
+        continuation.finish()
+    }
+}
+
 // @MainActor is required for Swift 6: ObservableObject's @Published properties
 // must be updated on the main actor. @MainActor classes are implicitly Sendable.
 @MainActor
@@ -22,10 +73,9 @@ class VoiceInputManager: ObservableObject {
     private var recognitionTask: SFSpeechRecognitionTask?
     private let speechRecognizer: SFSpeechRecognizer?
 
-    // Sendable bridge between RealtimeMessenger.mServiceQueue and the main actor.
-    // Storing it here lets stopListening() finish the stream immediately
-    // without waiting for the recognition task callback.
-    private var recognitionContinuation: AsyncStream<(String?, Bool, Bool)>.Continuation?
+    // Keep strong references so they stay alive while recognition is active.
+    private var recognitionDelegate: RecognitionDelegate?
+    private var recognitionContinuation: AsyncStream<SpeechEvent>.Continuation?
 
     init() {
         speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
@@ -63,10 +113,13 @@ class VoiceInputManager: ObservableObject {
     private func startRecognition() throws {
         stopRecognitionSync()
 
+        // ── Audio Session ──────────────────────────────────────────────────
+        // Use mode: .default (like the friend's code) instead of .measurement.
+        // .measurement can trigger internal dispatch_assert_queue assertions
+        // in Swift Playgrounds on iOS 18.
+        // ────────────────────────────────────────────────────────────────────
         let audioSession = AVAudioSession.sharedInstance()
-        // .playAndRecord is more compatible than .record in Swift Playgrounds
-        // and with other active audio (SpeechManager synthesizer, sounds).
-        try audioSession.setCategory(.playAndRecord, mode: .measurement,
+        try audioSession.setCategory(.playAndRecord, mode: .default,
                                      options: [.duckOthers, .defaultToSpeaker])
         try audioSession.setActive(true)
 
@@ -92,47 +145,39 @@ class VoiceInputManager: ObservableObject {
         recognizedText = "Listening..."
         errorMessage = ""
 
-        // ── Sendable bridge ──────────────────────────────────────────────────
-        // The Speech framework calls the recognition closure on
-        // RealtimeMessenger.mServiceQueue. Capturing [weak self] there —
-        // even inside Task { @MainActor in } — can cause _dispatch_assert_queue_fail
-        // because Swift 6 may instrument the @Sendable closure boundary with a
-        // @MainActor isolation check.
+        // ── Delegate bridge (friend's PlaybackDelegate pattern) ────────────
+        // 1. Create an AsyncStream with a Sendable continuation
+        // 2. Give the continuation to a RecognitionDelegate (@unchecked Sendable)
+        // 3. Use recognitionTask(with:delegate:) — NO closure to the framework
+        // 4. Drain the stream on @MainActor
         //
-        // Solution: capture ONLY `continuation`, which is Sendable.
-        // No self, no @MainActor state is ever touched on the background queue.
-        // ─────────────────────────────────────────────────────────────────────
-        let (stream, continuation) = AsyncStream.makeStream(of: (String?, Bool, Bool).self)
+        // The delegate's methods run on RealtimeMessenger.mServiceQueue.
+        // Because the delegate is NOT @MainActor, there is no isolation check
+        // and no _dispatch_assert_queue_fail crash.
+        // ────────────────────────────────────────────────────────────────────
+        let (stream, continuation) = AsyncStream.makeStream(of: SpeechEvent.self)
         recognitionContinuation = continuation
 
-        recognitionTask = speechRecognizer?.recognitionTask(with: request) { result, error in
-            // ── Running on RealtimeMessenger.mServiceQueue ──
-            // Only Sendable values. No self. No @MainActor access. No crash.
-            continuation.yield((
-                result?.bestTranscription.formattedString,
-                result?.isFinal ?? false,
-                error != nil
-            ))
-            if result?.isFinal == true || error != nil {
-                continuation.finish()
-            }
-        }
+        let delegate = RecognitionDelegate(continuation: continuation)
+        recognitionDelegate = delegate
+
+        recognitionTask = speechRecognizer?.recognitionTask(with: request, delegate: delegate)
 
         // Drain the stream on the main actor.
         Task { @MainActor [weak self] in
-            for await (text, isFinal, hasError) in stream {
-                guard let self, self.isListening else { break }
-                if hasError {
-                    self.stopListening()
-                    break
-                }
-                if let text {
+            eventLoop: for await event in stream {
+                guard let self, self.isListening else { break eventLoop }
+                switch event {
+                case .hypothesis(let text):
                     self.recognizedText = text
-                    if isFinal {
-                        self.processVoiceCommand(text)
-                        self.stopListening()
-                        break
-                    }
+                case .finalResult(let text):
+                    self.recognizedText = text
+                    self.processVoiceCommand(text)
+                    self.stopListening()
+                    break eventLoop
+                case .error:
+                    self.stopListening()
+                    break eventLoop
                 }
             }
         }
@@ -141,7 +186,7 @@ class VoiceInputManager: ObservableObject {
     func stopListening() {
         guard isListening else { return }
         // Finish the stream immediately so the for-await loop exits
-        // without waiting for the recognition task callback.
+        // without waiting for the delegate callback.
         recognitionContinuation?.finish()
         recognitionContinuation = nil
         stopRecognitionSync()
@@ -152,6 +197,7 @@ class VoiceInputManager: ObservableObject {
     private func stopRecognitionSync() {
         recognitionTask?.cancel()
         recognitionTask = nil
+        recognitionDelegate = nil
 
         recognitionRequest?.endAudio()
         recognitionRequest = nil
