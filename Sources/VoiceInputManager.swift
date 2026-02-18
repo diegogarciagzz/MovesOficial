@@ -7,6 +7,7 @@ import Foundation
 import Speech
 import AVFoundation
 
+@MainActor
 class VoiceInputManager: ObservableObject {
     @Published var isListening: Bool = false
     @Published var recognizedText: String = ""
@@ -24,9 +25,7 @@ class VoiceInputManager: ObservableObject {
     }
     
     func startListening() {
-        DispatchQueue.main.async { [weak self] in
-            self?._startListening()
-        }
+        _startListening()
     }
     
     private func _startListening() {
@@ -89,19 +88,19 @@ class VoiceInputManager: ObservableObject {
         recognitionTask = speechRecognizer?.recognitionTask(with: request) { [weak self] result, error in
             let text = result?.bestTranscription.formattedString
             let isFinal = result?.isFinal ?? false
-            
-            DispatchQueue.main.async {
-                guard let self = self else { return }
-                
-                if let text = text {
+
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+
+                if let text {
                     self.recognizedText = text
-                    
+
                     if isFinal {
                         self.processVoiceCommand(text)
                         self.stopListening()
                     }
                 }
-                
+
                 if error != nil {
                     self.stopListening()
                 }
@@ -110,11 +109,9 @@ class VoiceInputManager: ObservableObject {
     }
     
     func stopListening() {
-        DispatchQueue.main.async { [weak self] in
-            self?.stopRecognitionSync()
-            self?.recognizedText = ""
-            self?.isListening = false
-        }
+        stopRecognitionSync()
+        recognizedText = ""
+        isListening = false
     }
     
     private func stopRecognitionSync() {
