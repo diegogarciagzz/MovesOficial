@@ -10,7 +10,7 @@ import AppleProductTypes
 let package = Package(
     name: "MovesDiego",
     platforms: [
-        .iOS("16.0")
+        .iOS("17.0")
     ],
     products: [
         .iOSApplication(
@@ -46,4 +46,8 @@ let package = Package(
         )
     ],
     swiftLanguageVersions: [.version("5")]
+<<<<<<< HEAD
 )
+=======
+)
+>>>>>>> c506116812d35c5e6baf4010431ea85a9ce1356f
