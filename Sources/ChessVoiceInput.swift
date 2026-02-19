@@ -32,7 +32,17 @@ final class ChessVoiceInput: ObservableObject {
     // MARK: - Permissions (mejoradas)
     private func checkPermissions() {
         Task {
-            let micGranted = await AVAudioApplication.requestRecordPermission()
+            let micGranted: Bool
+            if #available(iOS 17.0, *) {
+                micGranted = await AVAudioApplication.requestRecordPermission()
+            } else {
+                // Fallback on earlier versions
+                micGranted = await withCheckedContinuation { continuation in
+                    AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                        continuation.resume(returning: granted)
+                    }
+                }
+            }
             let speechStatus = SFSpeechRecognizer.authorizationStatus()
             
             await MainActor.run {

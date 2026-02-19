@@ -4,7 +4,4 @@
    <FileRef
       location = "self:">
    </FileRef>
-   <FileRef
-      location = "group:CAMBIOS_REALIZADOS.md">
-   </FileRef>
 </Workspace>

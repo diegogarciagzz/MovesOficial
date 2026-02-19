@@ -2,6 +2,8 @@ import AVFoundation
 import Foundation
 
 final class SpeechManager: ObservableObject, @unchecked Sendable {
+    static let shared = SpeechManager()
+    
     private let synthesizer = AVSpeechSynthesizer()
 
     func speak(_ text: String) {
