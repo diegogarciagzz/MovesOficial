@@ -5,55 +5,79 @@
 //  Adapted from friend's AudioRecorder/PlaybackDelegate pattern:
 //  - AVAudioRecorder (NOT AVAudioEngine) to capture audio
 //  - SFSpeechURLRecognitionRequest to recognize the recorded file
-//  - RecognitionDelegate (@unchecked Sendable, NOT @MainActor) for callbacks
-//  - No audio taps, no streaming, no background-queue closures that crash
+//  - SpeechService is @unchecked Sendable, NOT @MainActor — this is
+//    critical because the Speech framework calls back on
+//    RealtimeMessenger.mServiceQueue and Swift 6 runtime traps if any
+//    @MainActor-isolated state is touched from that queue.
 //
 
 import Foundation
-import Speech
 import AVFoundation
+// @preconcurrency suppresses Swift 6 Sendable/isolation diagnostics AND
+// the compiler-emitted runtime checks for Speech framework types.
+@preconcurrency import Speech
 
-// ── Speech events forwarded from delegate to main actor ──────────────────
+// ── Speech events (Sendable values only) ─────────────────────────────────
 private enum SpeechEvent: Sendable {
     case hypothesis(String)
     case finalResult(String)
     case error
 }
 
-// ── Recognition Delegate (same pattern as friend's PlaybackDelegate) ─────
-// - NSObject subclass (required by @objc delegate protocols)
-// - @unchecked Sendable (NOT @MainActor)
-// - Holds only a Sendable continuation — no @MainActor references
-// - Methods run on the Speech framework's queue; forwards via AsyncStream
-private final class RecognitionDelegate: NSObject, SFSpeechRecognitionTaskDelegate, @unchecked Sendable {
-    let continuation: AsyncStream<SpeechEvent>.Continuation
+// ── Speech Service ───────────────────────────────────────────────────────
+// ALL SFSpeechRecognizer / SFSpeechRecognitionTask objects live here.
+// This class is NOT @MainActor — its methods and properties can be freely
+// accessed from RealtimeMessenger.mServiceQueue without triggering Swift 6
+// actor-isolation runtime traps (EXC_BREAKPOINT).
+//
+// Same pattern as friend's PlaybackDelegate: @unchecked Sendable, NSObject,
+// NOT @MainActor. Communicates results through a Sendable AsyncStream.
+// ─────────────────────────────────────────────────────────────────────────
+private final class SpeechService: @unchecked Sendable {
+    private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var task: SFSpeechRecognitionTask?
 
-    init(continuation: AsyncStream<SpeechEvent>.Continuation) {
-        self.continuation = continuation
-        super.init()
+    var isAvailable: Bool {
+        recognizer?.isAvailable ?? false
     }
 
-    func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didHypothesizeTranscription transcription: SFTranscription) {
-        continuation.yield(.hypothesis(transcription.formattedString))
-    }
+    /// Recognizes speech from a recorded audio file.
+    /// Returns an AsyncStream that yields SpeechEvents from the background queue.
+    func recognize(url: URL) -> AsyncStream<SpeechEvent> {
+        cancel()
 
-    func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishRecognition recognitionResult: SFSpeechRecognitionResult) {
-        continuation.yield(.finalResult(recognitionResult.bestTranscription.formattedString))
-    }
+        let (stream, continuation) = AsyncStream.makeStream(of: SpeechEvent.self)
+        let request = SFSpeechURLRecognitionRequest(url: url)
 
-    func speechRecognitionTask(_ task: SFSpeechRecognitionTask, didFinishSuccessfully successfully: Bool) {
-        if !successfully {
-            continuation.yield(.error)
+        // The closure runs on RealtimeMessenger.mServiceQueue.
+        // It captures ONLY `continuation` (Sendable) — no @MainActor state.
+        task = recognizer?.recognitionTask(with: request) { result, error in
+            if let result {
+                if result.isFinal {
+                    continuation.yield(.finalResult(result.bestTranscription.formattedString))
+                    continuation.finish()
+                } else {
+                    continuation.yield(.hypothesis(result.bestTranscription.formattedString))
+                }
+            }
+            if error != nil {
+                continuation.yield(.error)
+                continuation.finish()
+            }
         }
-        continuation.finish()
+
+        return stream
     }
 
-    func speechRecognitionTaskWasCancelled(_ task: SFSpeechRecognitionTask) {
-        continuation.finish()
+    func cancel() {
+        task?.cancel()
+        task = nil
     }
 }
 
 // ── Voice Input Manager ──────────────────────────────────────────────────
+// @MainActor for the UI state (@Published). Does NOT hold any Speech
+// framework objects — those are all in SpeechService above.
 @MainActor
 class VoiceInputManager: ObservableObject {
     @Published var isListening: Bool = false
@@ -66,20 +90,15 @@ class VoiceInputManager: ObservableObject {
     private var audioRecorder: AVAudioRecorder?
     private var recordingTimer: Timer?
 
-    // Recognition
-    private var recognitionTask: SFSpeechRecognitionTask?
-    private let speechRecognizer: SFSpeechRecognizer?
-    private var recognitionDelegate: RecognitionDelegate?
-    private var recognitionContinuation: AsyncStream<SpeechEvent>.Continuation?
+    // Speech recognition — completely isolated from @MainActor
+    private let speechService = SpeechService()
 
     private var recordingURL: URL {
         FileManager.default.temporaryDirectory
             .appendingPathComponent("MovesDiego_VoiceCommand.m4a")
     }
 
-    init() {
-        speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-    }
+    init() {}
 
     // MARK: - Public Interface
 
@@ -100,7 +119,7 @@ class VoiceInputManager: ObservableObject {
             return
         }
 
-        guard let recognizer = speechRecognizer, recognizer.isAvailable else {
+        guard speechService.isAvailable else {
             errorMessage = "Speech not available"
             return
         }
@@ -165,7 +184,9 @@ class VoiceInputManager: ObservableObject {
         audioRecorder?.stop()
         audioRecorder = nil
 
-        guard FileManager.default.fileExists(atPath: recordingURL.path) else {
+        let url = recordingURL
+
+        guard FileManager.default.fileExists(atPath: url.path) else {
             errorMessage = "No recording found"
             isListening = false
             recognizedText = ""
@@ -174,16 +195,11 @@ class VoiceInputManager: ObservableObject {
 
         recognizedText = "Processing..."
 
-        // ── File-based recognition (no AVAudioEngine, no streaming) ──────
-        let request = SFSpeechURLRecognitionRequest(url: recordingURL)
+        // Deactivate audio session before recognition (no longer recording)
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
 
-        let (stream, continuation) = AsyncStream.makeStream(of: SpeechEvent.self)
-        recognitionContinuation = continuation
-
-        let delegate = RecognitionDelegate(continuation: continuation)
-        recognitionDelegate = delegate
-
-        recognitionTask = speechRecognizer?.recognitionTask(with: request, delegate: delegate)
+        // ── File-based recognition via SpeechService (NOT @MainActor) ────
+        let stream = speechService.recognize(url: url)
 
         // Drain the stream on the main actor
         Task { @MainActor [weak self] in
@@ -209,12 +225,8 @@ class VoiceInputManager: ObservableObject {
     // MARK: - Cleanup
 
     private func cleanupAfterRecognition() {
-        recognitionTask = nil
-        recognitionDelegate = nil
-        recognitionContinuation = nil
         isListening = false
         try? FileManager.default.removeItem(at: recordingURL)
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
     }
 
     private func stopEverything() {
@@ -226,12 +238,7 @@ class VoiceInputManager: ObservableObject {
             audioRecorder = nil
         }
 
-        recognitionContinuation?.finish()
-        recognitionContinuation = nil
-
-        recognitionTask?.cancel()
-        recognitionTask = nil
-        recognitionDelegate = nil
+        speechService.cancel()
 
         try? FileManager.default.removeItem(at: recordingURL)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
