@@ -807,6 +807,57 @@ public class ChessGame: ObservableObject, @unchecked Sendable {
         return files[col]
     }
 
+    // MARK: - Voice Command Move Helpers
+
+    /// "e4", "knight c3", "bishop f4" — find the (unique) piece that can legally
+    /// move to the given square and execute it. Returns false if ambiguous or invalid.
+    func moveToSquare(toFile: String, toRank: Int, pieceType: PieceType? = nil) -> Bool {
+        let files = ["a": 0, "b": 1, "c": 2, "d": 3, "e": 4, "f": 5, "g": 6, "h": 7]
+        guard let toCol = files[toFile] else { return false }
+        let toRow = toRank - 1
+        guard isValidPosition(toRow, toCol) else { return false }
+
+        var candidates: [ChessPiece] = []
+        for row in 0..<8 {
+            for col in 0..<8 {
+                guard let piece = board[row][col],
+                      piece.color == currentPlayer,
+                      pieceType == nil || piece.type == pieceType
+                else { continue }
+                let legal = calculateLegalMoves(for: piece)
+                if legal.contains(where: { $0 == (toRow, toCol) }) {
+                    candidates.append(piece)
+                }
+            }
+        }
+
+        guard candidates.count == 1 else { return false } // 0 = no piece, >1 = ambiguous
+        selectPiece(at: candidates[0].position)
+        return movePiece(to: (toRow, toCol))
+    }
+
+    /// "castle" / "kingside castle" — king moves g-file.
+    func castleKingside() -> Bool {
+        let row = currentPlayer == .white ? 0 : 7
+        guard board[row][4]?.type == .king, board[row][4]?.color == currentPlayer else { return false }
+        selectPiece(at: (row, 4))
+        guard possibleMoves.contains(where: { $0 == (row, 6) }) else {
+            selectedPiece = nil; possibleMoves = []; return false
+        }
+        return movePiece(to: (row, 6))
+    }
+
+    /// "long castle" / "queenside castle" — king moves c-file.
+    func castleQueenside() -> Bool {
+        let row = currentPlayer == .white ? 0 : 7
+        guard board[row][4]?.type == .king, board[row][4]?.color == currentPlayer else { return false }
+        selectPiece(at: (row, 4))
+        guard possibleMoves.contains(where: { $0 == (row, 2) }) else {
+            selectedPiece = nil; possibleMoves = []; return false
+        }
+        return movePiece(to: (row, 2))
+    }
+
     /// Converts voice input coordinates (file letter + rank number) to board positions and executes the move.
     /// - Returns: `true` if the move was executed successfully.
     func moveFrom(file fromFile: String, rank fromRank: Int, toFile: String, rank toRank: Int) -> Bool {

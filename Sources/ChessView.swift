@@ -104,8 +104,10 @@ public struct ChessView: View {
         GeometryReader { geometry in
             let screenWidth = geometry.size.width
             let screenHeight = geometry.size.height
-            let sidebarWidth = min(screenWidth * 0.28, 400)
-            let boardSize = min(screenWidth - sidebarWidth - 60, screenHeight - 80)
+            // Reserve ~260pt for back btn + voice btn + captured pieces + padding
+            let sidebarWidth = min(screenWidth * 0.28, 300)
+            let boardSize = max(180, min(screenWidth - sidebarWidth - 48,
+                                         screenHeight - 260))
             let squareSize = boardSize / 8
 
             ZStack {
@@ -117,8 +119,9 @@ public struct ChessView: View {
                 )
                 .edgesIgnoringSafeArea(.all)
                 
-                HStack(spacing: 20) {
-                    // LEFT: Chess Board Section
+                HStack(spacing: 16) {
+                    // LEFT: Chess Board Section (scrollable so board never gets cut off)
+                    ScrollView(.vertical, showsIndicators: false) {
                     VStack(spacing: 16) {
                         // Botón BACK arriba a la izquierda
                         HStack {
@@ -226,16 +229,23 @@ public struct ChessView: View {
                                 .background(Color.white.opacity(0.1))
                                 .cornerRadius(8)
                             } else if !voiceManager.isListening {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "info.circle.fill")
-                                        .font(.system(size: 12))
-                                    Text("Example: \"e2 to e4\"")
-                                        .font(.system(size: 13))
+                                VStack(alignment: .leading, spacing: 4) {
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "info.circle.fill")
+                                            .font(.system(size: 11))
+                                        Text("Examples:")
+                                            .font(.system(size: 12, weight: .semibold))
+                                    }
+                                    Group {
+                                        Text("\"e4\"  •  \"knight c3\"  •  \"bishop c4\"")
+                                        Text("\"e2 to e4\"  •  \"castle\"  •  \"queenside castle\"")
+                                    }
+                                    .font(.system(size: 11))
                                 }
                                 .foregroundColor(.white.opacity(0.7))
-                                .padding(.horizontal, 16)
+                                .padding(.horizontal, 14)
                                 .padding(.vertical, 8)
-                                .frame(maxWidth: boardSize)
+                                .frame(maxWidth: boardSize, alignment: .leading)
                                 .background(Color.white.opacity(0.1))
                                 .cornerRadius(8)
                             }
@@ -449,7 +459,9 @@ public struct ChessView: View {
                         }
                     }
                     .frame(width: boardSize)
-                    
+                    } // end ScrollView (left column)
+                    .frame(width: boardSize)
+
                     // RIGHT: Move History Sidebar
                     VStack(alignment: .leading, spacing: 0) {
                         // Header
