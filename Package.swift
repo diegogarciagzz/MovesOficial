@@ -33,5 +33,10 @@ let package = Package(
             name: "AppModule",
             path: "."
         )
+<<<<<<< HEAD
     ]
+=======
+    ],
+    swiftLanguageVersions: [.version("5")]
+>>>>>>> ce2d9e82302ac3b11712a4e8b50c435e51207ace
 )
