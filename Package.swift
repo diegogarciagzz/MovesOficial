@@ -46,8 +46,4 @@ let package = Package(
         )
     ],
     swiftLanguageVersions: [.version("5")]
-<<<<<<< HEAD
 )
-=======
-)
->>>>>>> c506116812d35c5e6baf4010431ea85a9ce1356f
