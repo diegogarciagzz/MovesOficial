@@ -361,11 +361,11 @@ public struct ChessView: View {
                     .frame(width: game.board[row][col] == nil ? sq * 0.3 : sq * 0.88,
                            height: game.board[row][col] == nil ? sq * 0.3 : sq * 0.88)
                     .allowsHitTesting(false)
-                    .overlay(
-                        game.board[row][col] != nil
-                        ? Circle().stroke(Color.blue.opacity(0.8), lineWidth: 2)
-                        : nil
-                    )
+                    .overlay {
+                        if game.board[row][col] != nil {
+                            Circle().stroke(Color.blue.opacity(0.8), lineWidth: 2)
+                        }
+                    }
                     .onTapGesture {  // tap the square itself to move when piece is there
                         if game.selectedPiece != nil {
                             withAnimation(.easeInOut(duration: 0.2)) {
