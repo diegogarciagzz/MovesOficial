@@ -21,10 +21,14 @@ let package = Package(
                 .phone
             ],
             supportedInterfaceOrientations: [
-                .portrait,
                 .landscapeRight,
-                .landscapeLeft,
-                .portraitUpsideDown(.when(deviceFamilies: [.pad]))
+                .landscapeLeft
+            ],
+            capabilities: [
+                .outgoingNetworkConnections(),
+                .microphone(purposeString: "MOVES needs microphone for voice chess commands"),
+                .speechRecognition(purposeString: "MOVES uses voice to enter chess moves like \"e4\""),
+                .incomingNetworkConnections()
             ]
         )
     ],
@@ -33,10 +37,6 @@ let package = Package(
             name: "AppModule",
             path: "."
         )
-<<<<<<< HEAD
-    ]
-=======
     ],
     swiftLanguageVersions: [.version("5")]
->>>>>>> ce2d9e82302ac3b11712a4e8b50c435e51207ace
 )
