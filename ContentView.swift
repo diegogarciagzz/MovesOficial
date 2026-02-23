@@ -38,7 +38,7 @@ struct ContentView: View {
                     VStack(spacing: 0) {
 
                         // ── Logo ──────────────────────────────────────────
-                        Image("logo")
+                        Image("sinfondo")
                             .resizable()
                             .scaledToFit()
                             .frame(maxWidth: 320, maxHeight: 220)

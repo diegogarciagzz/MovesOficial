@@ -48,7 +48,7 @@ struct AboutView: View {
                     }
                     .padding(.horizontal, 28).padding(.top, 24).padding(.bottom, 4)
 
-                    Image("logo")
+                    Image("sinfondo")
                         .resizable()
                         .scaledToFit()
                         .frame(maxWidth: 200, maxHeight: 130)
