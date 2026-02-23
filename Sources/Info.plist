@@ -10,5 +10,15 @@
 	<string>MOVES needs microphone for voice chess commands</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>MOVES uses voice to enter chess moves like &quot;e4&quot;</string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
 </dict>
 </plist>

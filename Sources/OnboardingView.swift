@@ -49,9 +49,9 @@ private let onboardingSteps: [OnboardingStep] = [
         icon: "mic.fill",
         iconColor: Color(red: 0.52, green: 0.73, blue: 0.88),
         title: "Play by Voice",
-        body: "Tap the Voice button in the top bar and speak a move:\n\n• \"e4\" — move a pawn to e4\n• \"knight c3\" — move a knight\n• \"e2 to e4\" — from → to\n• \"castle\" — kingside castling",
-        voiceText: "You can also play completely by voice! Tap the microphone button in the top bar and say something like 'e four', 'knight c three', or 'e two to e four'. The app understands natural speech.",
-        hint: "Works best with a clear \"e four\" style pronunciation."
+        body: "Tap the Voice button and speak a move:\n\n• \"e4\" — move a pawn to e4\n• \"knight c3\" — move a knight\n• \"e2 to e4\" — exact from → to\n• \"castle\" — kingside castling",
+        voiceText: "You can also play completely by voice! Tap the microphone button and say something like 'e four', 'knight c three', or 'e two to e four'.",
+        hint: "Works best with clear pronunciation."
     ),
     OnboardingStep(
         icon: "sparkles",
@@ -59,11 +59,11 @@ private let onboardingSteps: [OnboardingStep] = [
         title: "You're All Set!",
         body: "The AI plays as black and responds automatically after each of your moves. Good luck — and enjoy the game!",
         voiceText: "That's everything you need to know! The AI will play as black and respond after each of your moves. Good luck, and enjoy MOVES!",
-        hint: "You can review commands anytime in About MOVES."
+        hint: "Review commands anytime in About MOVES."
     )
 ]
 
-// ── Speaker wrapper (avoids Sendable issues) ─────────────────────────────────
+// ── Speaker wrapper ───────────────────────────────────────────────────────────
 
 final class OnboardingSpeaker: ObservableObject, @unchecked Sendable {
     private let synth = AVSpeechSynthesizer()
@@ -93,19 +93,28 @@ struct OnboardingView: View {
 
     private let steps = onboardingSteps
 
+    // Fixed heights so buttons never shift position
+    private let dotRowH:    CGFloat = 52
+    private let iconH:      CGFloat = 100  // circle + bottom padding
+    private let titleH:     CGFloat = 52   // text + bottom padding
+    private let bodyAreaH:  CGFloat = 200  // body + hint — the only variable part, fixed
+    private let dividerH:   CGFloat = 1
+    private let buttonRowH: CGFloat = 72
+
     var body: some View {
         ZStack {
-            // Dim overlay
             Color.black.opacity(0.82)
                 .ignoresSafeArea()
-                .onTapGesture { } // absorb taps behind the card
+                .onTapGesture { }
 
+            // Center the card
             VStack {
                 Spacer()
 
-                // ── Card ───────────────────────────────────────────────────
+                // ── Card ─────────────────────────────────────────────────────
                 VStack(spacing: 0) {
-                    // Step dots
+
+                    // 1. Step progress dots — fixed height
                     HStack(spacing: 7) {
                         ForEach(0..<steps.count, id: \.self) { i in
                             Capsule()
@@ -116,150 +125,154 @@ struct OnboardingView: View {
                                 .animation(.easeInOut(duration: 0.25), value: currentStep)
                         }
                     }
-                    .padding(.top, 22)
-                    .padding(.bottom, 20)
+                    .frame(height: dotRowH, alignment: .bottom)
+                    .padding(.bottom, 4)
 
-                    // Icon
+                    // 2. Icon — fixed height
                     ZStack {
                         Circle()
                             .fill(steps[currentStep].iconColor.opacity(0.18))
-                            .frame(width: 72, height: 72)
+                            .frame(width: 64, height: 64)
 
-                        // Animated pulse ring
                         Circle()
                             .stroke(steps[currentStep].iconColor.opacity(animateDot ? 0 : 0.4),
                                     lineWidth: 2)
-                            .frame(width: 72 + (animateDot ? 22 : 0),
-                                   height: 72 + (animateDot ? 22 : 0))
+                            .frame(width: 64 + (animateDot ? 20 : 0),
+                                   height: 64 + (animateDot ? 20 : 0))
                             .animation(
                                 .easeOut(duration: 1.4).repeatForever(autoreverses: false),
                                 value: animateDot
                             )
 
                         Image(systemName: steps[currentStep].icon)
-                            .font(.system(size: 30, weight: .semibold))
+                            .font(.system(size: 28, weight: .semibold))
                             .foregroundColor(steps[currentStep].iconColor)
                     }
-                    .padding(.bottom, 16)
+                    .frame(height: iconH, alignment: .center)
 
-                    // Title
+                    // 3. Title — fixed height
                     Text(steps[currentStep].title)
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .font(.system(size: 21, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
+                        .lineLimit(2)
                         .padding(.horizontal, 24)
-                        .padding(.bottom, 12)
+                        .frame(height: titleH, alignment: .center)
 
-                    // Body text
-                    Text(steps[currentStep].body)
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundColor(.white.opacity(0.78))
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(4)
-                        .padding(.horizontal, 28)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.bottom, 16)
+                    // 4. Body + Hint — FIXED height, this is what was jumping
+                    VStack(alignment: .center, spacing: 0) {
+                        ScrollView(showsIndicators: false) {
+                            VStack(spacing: 12) {
+                                Text(steps[currentStep].body)
+                                    .font(.system(size: 14, weight: .regular))
+                                    .foregroundColor(.white.opacity(0.78))
+                                    .multilineTextAlignment(.center)
+                                    .lineSpacing(3)
+                                    .padding(.horizontal, 28)
+                                    .frame(maxWidth: .infinity)
 
-                    // Hint chip
-                    Text(steps[currentStep].hint)
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundColor(steps[currentStep].iconColor.opacity(0.85))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(steps[currentStep].iconColor.opacity(0.12))
-                        .cornerRadius(10)
-                        .padding(.bottom, 24)
+                                // Hint chip
+                                Text(steps[currentStep].hint)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(steps[currentStep].iconColor.opacity(0.85))
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 5)
+                                    .background(steps[currentStep].iconColor.opacity(0.12))
+                                    .cornerRadius(9)
+                            }
+                            .padding(.top, 8)
+                            .padding(.bottom, 4)
+                        }
+                    }
+                    .frame(height: bodyAreaH)  // ← FIXED: buttons will never move
 
-                    Divider().background(Color.white.opacity(0.1))
+                    // 5. Divider — always at the same Y
+                    Divider()
+                        .background(Color.white.opacity(0.1))
+                        .frame(height: dividerH)
 
-                    // Buttons row
-                    HStack(spacing: 12) {
+                    // 6. Buttons — always at bottom, never shift
+                    HStack(spacing: 10) {
                         // Skip
-                        Button {
-                            finish()
-                        } label: {
+                        Button { finish() } label: {
                             Text("Skip")
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundColor(.white.opacity(0.4))
-                                .padding(.horizontal, 20)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(.white.opacity(0.35))
+                                .padding(.horizontal, 16)
                                 .padding(.vertical, 12)
                         }
 
                         Spacer()
 
-                        // Back (steps > 0)
+                        // Back
                         if currentStep > 0 {
                             Button {
-                                withAnimation(.easeInOut(duration: 0.22)) {
-                                    currentStep -= 1
-                                }
+                                withAnimation(.easeInOut(duration: 0.22)) { currentStep -= 1 }
                                 speaker.speak(steps[currentStep].voiceText)
                             } label: {
-                                HStack(spacing: 5) {
+                                HStack(spacing: 4) {
                                     Image(systemName: "chevron.left")
-                                        .font(.system(size: 13, weight: .semibold))
+                                        .font(.system(size: 12, weight: .semibold))
                                     Text("Back")
-                                        .font(.system(size: 15, weight: .medium))
+                                        .font(.system(size: 14, weight: .medium))
                                 }
                                 .foregroundColor(.white.opacity(0.6))
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 12)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 11)
                                 .background(Color.white.opacity(0.08))
-                                .cornerRadius(12)
+                                .cornerRadius(11)
                             }
+                        } else {
+                            // Invisible placeholder so Next doesn't shift right on step 0
+                            Color.clear
+                                .frame(width: 72, height: 42)
                         }
 
                         // Next / Let's Play
                         Button {
                             if currentStep < steps.count - 1 {
-                                withAnimation(.easeInOut(duration: 0.22)) {
-                                    currentStep += 1
-                                }
+                                withAnimation(.easeInOut(duration: 0.22)) { currentStep += 1 }
                                 speaker.speak(steps[currentStep].voiceText)
                             } else {
                                 finish()
                             }
                         } label: {
-                            HStack(spacing: 6) {
+                            HStack(spacing: 5) {
                                 Text(currentStep < steps.count - 1 ? "Next" : "Let's Play!")
-                                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                                    .font(.system(size: 15, weight: .bold, design: .rounded))
                                 if currentStep < steps.count - 1 {
                                     Image(systemName: "chevron.right")
-                                        .font(.system(size: 13, weight: .bold))
+                                        .font(.system(size: 12, weight: .bold))
                                 }
                             }
                             .foregroundColor(.white)
-                            .padding(.horizontal, 22)
-                            .padding(.vertical, 12)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 11)
                             .background(
                                 LinearGradient(
-                                    colors: [
-                                        Color(red: 0.30, green: 0.42, blue: 0.58),
-                                        steps[currentStep].iconColor
-                                    ],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
+                                    colors: [Color(red: 0.30, green: 0.42, blue: 0.58),
+                                             steps[currentStep].iconColor],
+                                    startPoint: .leading, endPoint: .trailing
                                 )
                             )
-                            .cornerRadius(12)
-                            .shadow(color: steps[currentStep].iconColor.opacity(0.4),
-                                    radius: 10, y: 3)
+                            .cornerRadius(11)
+                            .shadow(color: steps[currentStep].iconColor.opacity(0.35),
+                                    radius: 8, y: 3)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 14)
+                    .padding(.horizontal, 18)
+                    .frame(height: buttonRowH, alignment: .center)
                 }
                 .background(
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: 22)
                         .fill(Color(red: 0.09, green: 0.11, blue: 0.18))
                         .overlay(
-                            RoundedRectangle(cornerRadius: 24)
+                            RoundedRectangle(cornerRadius: 22)
                                 .stroke(steps[currentStep].iconColor.opacity(0.22), lineWidth: 1)
                         )
                 )
-                .shadow(color: .black.opacity(0.7), radius: 40, y: 12)
-                .padding(.horizontal, 20)
-                .id(currentStep)   // forces re-render for smooth transitions
+                .shadow(color: .black.opacity(0.65), radius: 36, y: 10)
+                .padding(.horizontal, 22)
 
                 Spacer()
             }
@@ -270,16 +283,12 @@ struct OnboardingView: View {
                 speaker.speak(steps[0].voiceText)
             }
         }
-        .onDisappear {
-            speaker.stop()
-        }
+        .onDisappear { speaker.stop() }
     }
 
     private func finish() {
         speaker.stop()
         UserDefaults.standard.set(true, forKey: "hasSeenOnboarding")
-        withAnimation(.easeOut(duration: 0.3)) {
-            isPresented = false
-        }
+        withAnimation(.easeOut(duration: 0.3)) { isPresented = false }
     }
 }
