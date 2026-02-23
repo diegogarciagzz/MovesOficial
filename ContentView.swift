@@ -41,24 +41,9 @@ struct ContentView: View {
                         Image("sinfondo")
                             .resizable()
                             .scaledToFit()
-                            .frame(maxWidth: 320, maxHeight: 220)
-                            .padding(.top, 48)
-                            .padding(.bottom, 8)
-
-                        // ── Tagline ───────────────────────────────────────
-                        Text("Hear the Game. Master the Mind.")
-                            .font(.system(size: 19, weight: .medium, design: .rounded))
-                            .foregroundColor(Color.movesBlue)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 32)
-                            .padding(.bottom, 6)
-
-                        Text("\"The greatest strategic minds don't need to see the board\"")
-                            .font(.system(size: 14, weight: .regular, design: .rounded))
-                            .multilineTextAlignment(.center)
-                            .foregroundColor(.white.opacity(0.45))
-                            .padding(.horizontal, 40)
-                            .padding(.bottom, 36)
+                            .frame(maxWidth: 320, maxHeight: 240)
+                            .padding(.top, 56)
+                            .padding(.bottom, 32)
 
                         // ── Voice Ready badge ─────────────────────────────
                         if speechAuthorized && microphoneAuthorized {
@@ -85,27 +70,20 @@ struct ContentView: View {
 
                         // ── Play button ───────────────────────────────────
                         NavigationLink(destination: ChessView().navigationBarBackButtonHidden(true)) {
-                            HStack(spacing: 14) {
-                                Image("icono")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(width: 28, height: 28)
-
-                                Text("Play Accessible Chess")
-                                    .font(.system(size: 19, weight: .bold, design: .rounded))
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 40)
-                            .padding(.vertical, 18)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.movesMid, Color.movesBlue],
-                                    startPoint: .leading,
-                                    endPoint: .trailing
+                            Text("Play Accessible Chess")
+                                .font(.system(size: 19, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 48)
+                                .padding(.vertical, 18)
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color.movesMid, Color.movesBlue],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
                                 )
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 28))
-                            .shadow(color: Color.movesBlue.opacity(0.45), radius: 18, y: 6)
+                                .clipShape(RoundedRectangle(cornerRadius: 28))
+                                .shadow(color: Color.movesBlue.opacity(0.45), radius: 18, y: 6)
                         }
                         .padding(.bottom, 16)
 
