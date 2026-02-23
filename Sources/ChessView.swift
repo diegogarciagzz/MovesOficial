@@ -82,7 +82,6 @@ public struct ChessView: View {
             let w = geo.size.width
             let h = geo.size.height
             let isLandscape = w > h
-            let topH: CGFloat = 56
 
             ZStack {
                 // Background
@@ -93,16 +92,10 @@ public struct ChessView: View {
                 )
                 .ignoresSafeArea()
 
-                VStack(spacing: 0) {
-                    topBar(showReset: showResetButton)
-                        .frame(height: topH)
-                        .padding(.horizontal, 14)
-
-                    if isLandscape {
-                        landscapeContent(w: w, h: h, topH: topH)
-                    } else {
-                        portraitContent(w: w, h: h, topH: topH)
-                    }
+                if isLandscape {
+                    landscapeLayout(w: w, h: h)
+                } else {
+                    portraitLayout(w: w, h: h)
                 }
             }
         }
@@ -139,7 +132,6 @@ public struct ChessView: View {
         .sheet(isPresented: $showPromotionSheet) { PromotionView(game: game) }
         .sheet(isPresented: $showDifficultySelection, onDismiss: {
             game.resetGame(difficulty: selectedDifficulty)
-            // Show onboarding on very first game
             if !UserDefaults.standard.bool(forKey: "hasSeenOnboarding") {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     showOnboarding = true
@@ -156,63 +148,90 @@ public struct ChessView: View {
         }
     }
 
-    // ── LANDSCAPE LAYOUT ─────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // MARK: - LANDSCAPE LAYOUT
+    // ═══════════════════════════════════════════════════════════════════════
 
     @ViewBuilder
-    func landscapeContent(w: CGFloat, h: CGFloat, topH: CGFloat) -> some View {
-        let hPad: CGFloat = 14
-        let gap: CGFloat  = 12
-        // Sidebar: never more than 28% of screen or 230 pts
-        let sideW: CGFloat = min(230, w * 0.28)
-        // Board fills remaining space, capped by available height
-        let availH: CGFloat = h - topH - 16
-        let availW: CGFloat = w - hPad * 2 - gap - sideW
-        let boardSize: CGFloat = max(200, min(availH, availW))
+    func landscapeLayout(w: CGFloat, h: CGFloat) -> some View {
+        let pad: CGFloat   = 10
+        let gap: CGFloat   = 10
+        let topH: CGFloat  = 48
+        let voiceH: CGFloat = 54
+
+        // Board: square, driven strictly by available height
+        let availH  = h - topH - voiceH - pad * 2 - 4
+        let sideW: CGFloat = min(210, w * 0.26)
+        let availW  = w - pad * 2 - gap - sideW
+        let boardSize = max(160, min(availH, availW))
         let sq = boardSize / 8
 
-        HStack(alignment: .center, spacing: gap) {
-            // Board (vertically centered)
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                boardGrid(sq: sq, size: boardSize)
-                    .shadow(color: .black.opacity(0.55), radius: 16)
-                Spacer(minLength: 0)
-            }
-            .frame(width: boardSize)
+        VStack(spacing: 0) {
+            // ── Top strip: back, status, reset ───────────────────
+            landscapeTopBar
+                .frame(height: topH)
+                .padding(.horizontal, pad)
 
-            // Sidebar
-            sidebarView(width: sideW)
-                .frame(width: sideW)
+            // ── Voice button: full width, prominent ──────────────
+            voiceButton
+                .frame(height: voiceH)
+                .padding(.horizontal, pad)
+
+            // ── Board + Sidebar ──────────────────────────────────
+            HStack(alignment: .center, spacing: gap) {
+                boardGrid(sq: sq, size: boardSize)
+                    .shadow(color: .black.opacity(0.55), radius: 12)
+
+                sidebarView(width: sideW)
+                    .frame(width: sideW)
+            }
+            .padding(.horizontal, pad)
+            .padding(.vertical, pad)
+            .frame(maxHeight: .infinity)
         }
-        .padding(.horizontal, hPad)
-        .padding(.bottom, 8)
-        .frame(maxHeight: .infinity)
     }
 
-    // ── PORTRAIT LAYOUT ──────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // MARK: - PORTRAIT LAYOUT
+    // ═══════════════════════════════════════════════════════════════════════
 
     @ViewBuilder
-    func portraitContent(w: CGFloat, h: CGFloat, topH: CGFloat) -> some View {
-        let hPad: CGFloat = 12
-        // Board: full width minus padding, and no more than 55% of screen height
-        let boardSize: CGFloat = max(200, min(w - hPad * 2, h * 0.55))
+    func portraitLayout(w: CGFloat, h: CGFloat) -> some View {
+        let pad: CGFloat   = 10
+        let topH: CGFloat  = 48
+        let voiceH: CGFloat = 56
+
+        // Board: full width, capped so info panel still fits
+        let boardSize = max(160, min(w - pad * 2, h - topH - voiceH - 140))
         let sq = boardSize / 8
 
-        VStack(spacing: 10) {
+        VStack(spacing: 0) {
+            portraitTopBar
+                .frame(height: topH)
+                .padding(.horizontal, pad)
+
+            voiceButton
+                .frame(height: voiceH)
+                .padding(.horizontal, pad)
+
             boardGrid(sq: sq, size: boardSize)
-                .shadow(color: .black.opacity(0.55), radius: 16)
+                .shadow(color: .black.opacity(0.55), radius: 12)
                 .frame(maxWidth: .infinity)
+                .padding(.horizontal, pad)
+                .padding(.top, 4)
 
             portraitInfoPanel()
+                .padding(.horizontal, pad)
+                .padding(.top, 6)
                 .frame(maxHeight: .infinity)
+
+            Spacer(minLength: 4)
         }
-        .padding(.horizontal, hPad)
-        .padding(.bottom, 10)
     }
 
     @ViewBuilder
     func portraitInfoPanel() -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             capturedView
             recentMovesView
         }
@@ -222,198 +241,262 @@ public struct ChessView: View {
     var recentMovesView: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Recent Moves")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.white.opacity(0.45))
-                .padding(.horizontal, 12)
-                .padding(.top, 8)
-                .padding(.bottom, 5)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.white.opacity(0.4))
+                .padding(.horizontal, 10)
+                .padding(.top, 7)
+                .padding(.bottom, 4)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 5) {
+                HStack(spacing: 4) {
                     ForEach(movePairs.suffix(8), id: \.moveNumber) { pair in
                         HStack(spacing: 3) {
                             Text("\(pair.moveNumber).")
-                                .font(.system(size: 11))
+                                .font(.system(size: 10))
                                 .foregroundColor(.white.opacity(0.4))
                             Text(pair.white ?? "")
-                                .font(.system(size: 12, weight: .semibold))
+                                .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(.white)
                             if let bm = pair.black {
                                 Text(bm)
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.white.opacity(0.65))
+                                    .font(.system(size: 11))
+                                    .foregroundColor(.white.opacity(0.6))
                             }
                         }
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 4)
-                        .background(Color.white.opacity(0.07))
-                        .cornerRadius(7)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.white.opacity(0.06))
+                        .cornerRadius(6)
                     }
                 }
-                .padding(.horizontal, 12)
-                .padding(.bottom, 8)
+                .padding(.horizontal, 10)
+                .padding(.bottom, 7)
             }
         }
-        .background(Color.black.opacity(0.28))
-        .cornerRadius(14)
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.1), lineWidth: 1))
+        .background(Color.black.opacity(0.25))
+        .cornerRadius(12)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.08), lineWidth: 1))
     }
 
-    // ── TOP BAR ──────────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // MARK: - VOICE BUTTON (shared, prominent)
+    // ═══════════════════════════════════════════════════════════════════════
 
     @ViewBuilder
-    func topBar(showReset: Bool) -> some View {
-        HStack(spacing: 8) {
-
-            // Back button
-            Button { dismiss() } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
-                    Text("Menu").font(.system(size: 13, weight: .semibold))
-                }
-                .foregroundColor(.white)
-                .padding(.horizontal, 12).padding(.vertical, 8)
-                .background(Color.white.opacity(0.12))
-                .cornerRadius(10)
+    var voiceButton: some View {
+        Button {
+            if speechAuthorized && microphoneAuthorized {
+                voiceManager.startListening()
+            } else {
+                voiceManager.errorMessage = "Enable Speech & Mic in Settings"
             }
+        } label: {
+            HStack(spacing: 12) {
+                // Mic circle
+                ZStack {
+                    Circle()
+                        .fill(voiceManager.isListening
+                              ? Color.red.opacity(0.35)
+                              : Color(red: 0.52, green: 0.73, blue: 0.88).opacity(0.3))
+                        .frame(width: 38, height: 38)
 
-            // Voice control button
-            Button {
-                if speechAuthorized && microphoneAuthorized {
-                    voiceManager.startListening()
-                } else {
-                    voiceManager.errorMessage = "Enable Speech & Mic in Settings"
-                }
-            } label: {
-                HStack(spacing: 7) {
-                    ZStack {
+                    if voiceManager.isListening {
                         Circle()
-                            .fill(voiceManager.isListening
-                                  ? Color.red.opacity(0.3)
-                                  : Color(red: 0.52, green: 0.73, blue: 0.88).opacity(0.25))
-                            .frame(width: 30, height: 30)
-                        Image(systemName: voiceManager.isListening ? "mic.fill" : "mic")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(voiceManager.isListening
-                                             ? .red
-                                             : Color(red: 0.52, green: 0.73, blue: 0.88))
-                            .scaleEffect(voiceManager.isListening ? 1.15 : 1.0)
+                            .stroke(Color.red.opacity(0.6), lineWidth: 2)
+                            .frame(width: 38, height: 38)
+                            .scaleEffect(voiceManager.isListening ? 1.4 : 1.0)
+                            .opacity(voiceManager.isListening ? 0 : 1)
                             .animation(
-                                voiceManager.isListening
-                                ? .easeInOut(duration: 0.7).repeatForever(autoreverses: true)
-                                : .default,
+                                .easeOut(duration: 1.0).repeatForever(autoreverses: false),
                                 value: voiceManager.isListening
                             )
                     }
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(voiceManager.isListening ? "Listening…" : "Voice")
-                            .font(.system(size: 12, weight: .semibold))
-                        if voiceManager.isListening && !voiceManager.recognizedText.isEmpty
-                           && voiceManager.recognizedText != "Listening..."
-                           && voiceManager.recognizedText != "Processing..." {
-                            Text(voiceManager.recognizedText)
-                                .font(.system(size: 10))
-                                .opacity(0.7)
-                                .lineLimit(1)
-                        } else {
-                            Text(voiceManager.isListening ? "Tap to stop" : "Tap to speak")
-                                .font(.system(size: 10))
-                                .opacity(0.55)
-                        }
+
+                    Image(systemName: voiceManager.isListening ? "mic.fill" : "mic")
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(voiceManager.isListening
+                                         ? .red
+                                         : Color(red: 0.52, green: 0.73, blue: 0.88))
+                        .scaleEffect(voiceManager.isListening ? 1.15 : 1.0)
+                        .animation(
+                            voiceManager.isListening
+                            ? .easeInOut(duration: 0.65).repeatForever(autoreverses: true)
+                            : .default,
+                            value: voiceManager.isListening
+                        )
+                }
+
+                // Labels
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(voiceManager.isListening ? "Listening…" : "Voice Control")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundColor(.white)
+
+                    if voiceManager.isListening && !voiceManager.recognizedText.isEmpty
+                       && voiceManager.recognizedText != "Listening..."
+                       && voiceManager.recognizedText != "Processing..." {
+                        Text(voiceManager.recognizedText)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.white.opacity(0.8))
+                            .lineLimit(1)
+                    } else if !voiceManager.errorMessage.isEmpty {
+                        Text(voiceManager.errorMessage)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundColor(.red.opacity(0.9))
+                            .lineLimit(1)
+                    } else {
+                        Text(voiceManager.isListening
+                             ? "Tap to stop"
+                             : "Tap to speak — \"e4\", \"knight c3\", \"castle\"")
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.5))
                     }
                 }
-                .foregroundColor(.white)
-                .padding(.horizontal, 10).padding(.vertical, 6)
-                .background(
-                    voiceManager.isListening
-                    ? LinearGradient(colors: [.red.opacity(0.4), .red.opacity(0.25)],
-                                     startPoint: .leading, endPoint: .trailing)
-                    : LinearGradient(
-                        colors: [Color(red: 0.30, green: 0.42, blue: 0.58).opacity(0.5),
-                                 Color(red: 0.52, green: 0.73, blue: 0.88).opacity(0.3)],
-                        startPoint: .leading, endPoint: .trailing)
-                )
-                .cornerRadius(16)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(
-                            voiceManager.isListening
-                            ? Color.red.opacity(0.5)
-                            : Color(red: 0.52, green: 0.73, blue: 0.88).opacity(0.35),
-                            lineWidth: 1
-                        )
-                )
-            }
-            .disabled(!speechAuthorized || !microphoneAuthorized)
-            .accessibilityLabel(voiceManager.isListening ? "Stop listening" : "Start voice control")
 
-            // Error message
-            if !voiceManager.errorMessage.isEmpty {
+                Spacer()
+
+                // Right-side icon
+                Image(systemName: voiceManager.isListening ? "stop.circle.fill" : "chevron.right")
+                    .font(.system(size: voiceManager.isListening ? 22 : 14, weight: .semibold))
+                    .foregroundColor(voiceManager.isListening
+                                     ? .red.opacity(0.8)
+                                     : .white.opacity(0.25))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .frame(maxWidth: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(
+                        voiceManager.isListening
+                        ? LinearGradient(colors: [Color.red.opacity(0.22), Color.red.opacity(0.12)],
+                                         startPoint: .leading, endPoint: .trailing)
+                        : LinearGradient(
+                            colors: [Color(red: 0.18, green: 0.24, blue: 0.38),
+                                     Color(red: 0.14, green: 0.20, blue: 0.32)],
+                            startPoint: .leading, endPoint: .trailing)
+                    )
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(
+                        voiceManager.isListening
+                        ? Color.red.opacity(0.5)
+                        : Color(red: 0.52, green: 0.73, blue: 0.88).opacity(0.3),
+                        lineWidth: 1.5
+                    )
+            )
+        }
+        .disabled(!speechAuthorized || !microphoneAuthorized)
+        .accessibilityLabel(voiceManager.isListening ? "Stop listening" : "Start voice control")
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MARK: - TOP BARS (compact, no voice button here)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @ViewBuilder
+    var landscapeTopBar: some View {
+        HStack(spacing: 8) {
+            // Back
+            Button { dismiss() } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "exclamationmark.triangle.fill").font(.system(size: 10))
-                    Text(voiceManager.errorMessage).font(.system(size: 10)).lineLimit(1)
+                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+                    Text("Menu").font(.system(size: 12, weight: .semibold))
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 9).padding(.vertical, 5)
-                .background(Color.red.opacity(0.5))
-                .cornerRadius(7)
-            } else if !speechAuthorized || !microphoneAuthorized {
-                Text("Enable Speech & Mic in Settings")
-                    .font(.system(size: 10)).foregroundColor(.white.opacity(0.5))
-                    .padding(.horizontal, 8).padding(.vertical, 5)
-                    .background(Color.white.opacity(0.08)).cornerRadius(7)
+                .padding(.horizontal, 10).padding(.vertical, 7)
+                .background(Color.white.opacity(0.1))
+                .cornerRadius(9)
             }
 
             Spacer()
 
-            // New game button (always shown once game is started)
-            if showReset {
-                Button {
-                    showResetButton = false
-                    showDifficultySelection = true
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.clockwise").font(.system(size: 11, weight: .semibold))
-                        Text("New Game").font(.system(size: 12, weight: .semibold))
-                    }
-                    .foregroundColor(.white)
-                    .padding(.horizontal, 10).padding(.vertical, 6)
-                    .background(Color(red: 0.30, green: 0.42, blue: 0.58).opacity(0.6))
-                    .cornerRadius(9)
-                }
-            }
+            // Turn indicator
+            turnIndicator
 
-            // Current player indicator
-            HStack(spacing: 5) {
-                Circle()
-                    .fill(game.currentPlayer == .white ? Color.white : Color(white: 0.18))
-                    .frame(width: 9, height: 9)
-                    .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 1))
-                Text(game.currentPlayer == .white ? "Your turn" : "AI…")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white.opacity(0.75))
-            }
-            .padding(.horizontal, 9).padding(.vertical, 6)
-            .background(Color.white.opacity(0.08))
-            .cornerRadius(8)
+            // Check
+            if game.isInCheck { checkBadge }
 
-            // Check indicator
-            if game.isInCheck {
-                HStack(spacing: 4) {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .font(.system(size: 11))
-                    Text("CHECK")
-                        .font(.system(size: 11, weight: .heavy))
-                }
-                .foregroundColor(.red)
-                .padding(.horizontal, 9).padding(.vertical, 6)
-                .background(Color.red.opacity(0.18))
-                .cornerRadius(8)
-            }
+            // New game
+            if showResetButton { newGameButton }
         }
     }
 
-    // ── CHESS BOARD ───────────────────────────────────────────────────────────
+    @ViewBuilder
+    var portraitTopBar: some View {
+        HStack(spacing: 8) {
+            Button { dismiss() } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
+                    Text("Menu").font(.system(size: 12, weight: .semibold))
+                }
+                .foregroundColor(.white)
+                .padding(.horizontal, 10).padding(.vertical, 7)
+                .background(Color.white.opacity(0.1))
+                .cornerRadius(9)
+            }
+
+            Spacer()
+
+            turnIndicator
+
+            if game.isInCheck { checkBadge }
+
+            if showResetButton { newGameButton }
+        }
+    }
+
+    // Shared small pieces:
+
+    @ViewBuilder
+    var turnIndicator: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(game.currentPlayer == .white ? Color.white : Color(white: 0.15))
+                .frame(width: 9, height: 9)
+                .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 1))
+            Text(game.currentPlayer == .white ? "Your turn" : "AI…")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(.white.opacity(0.7))
+        }
+        .padding(.horizontal, 9).padding(.vertical, 6)
+        .background(Color.white.opacity(0.07))
+        .cornerRadius(8)
+    }
+
+    @ViewBuilder
+    var checkBadge: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "exclamationmark.circle.fill").font(.system(size: 10))
+            Text("CHECK").font(.system(size: 10, weight: .heavy))
+        }
+        .foregroundColor(.red)
+        .padding(.horizontal, 8).padding(.vertical, 5)
+        .background(Color.red.opacity(0.16))
+        .cornerRadius(7)
+    }
+
+    @ViewBuilder
+    var newGameButton: some View {
+        Button {
+            showResetButton = false
+            showDifficultySelection = true
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.clockwise").font(.system(size: 11, weight: .semibold))
+                Text("New").font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 9).padding(.vertical, 6)
+            .background(Color(red: 0.30, green: 0.42, blue: 0.58).opacity(0.55))
+            .cornerRadius(8)
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MARK: - CHESS BOARD
+    // ═══════════════════════════════════════════════════════════════════════
 
     @ViewBuilder
     func boardGrid(sq: CGFloat, size: CGFloat) -> some View {
@@ -426,11 +509,11 @@ public struct ChessView: View {
                 }
             }
         }
-        .frame(width: size, height: size)
-        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .frame(width: sq * 8, height: sq * 8)  // always exactly 8 × sq
+        .clipShape(RoundedRectangle(cornerRadius: 5))
         .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(Color.black.opacity(0.4), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 5)
+                .stroke(Color.black.opacity(0.5), lineWidth: 1.5)
         )
     }
 
@@ -448,13 +531,10 @@ public struct ChessView: View {
                       ? (isLight ? Color(red: 1.0, green: 0.85, blue: 0.35)
                                  : Color(red: 0.75, green: 0.65, blue: 0.2))
                       : (isLight ? lightColor : darkColor))
-                .frame(width: sq, height: sq)
 
             // Last move highlight
             if isLastMoveSquare(row: row, col: col) && !isSelected {
-                Rectangle()
-                    .fill(Color.yellow.opacity(0.42))
-                    .frame(width: sq, height: sq)
+                Rectangle().fill(Color.yellow.opacity(0.40))
             }
 
             // Piece image
@@ -462,7 +542,7 @@ public struct ChessView: View {
                 Image("\(piece.type.rawValue)_\(piece.color.rawValue)")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: sq * 0.84, height: sq * 0.84)
+                    .frame(width: sq * 0.82, height: sq * 0.82)
                     .onTapGesture {
                         if piece.color == game.currentPlayer {
                             withAnimation(.easeInOut(duration: 0.12)) {
@@ -484,8 +564,8 @@ public struct ChessView: View {
                 Circle()
                     .fill(Color(red: 0.1, green: 0.55, blue: 1.0)
                         .opacity(isCapture ? 0.0 : 0.45))
-                    .frame(width: isCapture ? sq * 0.92 : sq * 0.32,
-                           height: isCapture ? sq * 0.92 : sq * 0.32)
+                    .frame(width: isCapture ? sq * 0.90 : sq * 0.30,
+                           height: isCapture ? sq * 0.90 : sq * 0.30)
                     .overlay(
                         isCapture
                         ? Circle()
@@ -495,9 +575,7 @@ public struct ChessView: View {
                     )
                     .allowsHitTesting(false)
 
-                // Full-square tap to move
                 Color.clear
-                    .frame(width: sq, height: sq)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         if game.selectedPiece != nil {
@@ -512,75 +590,77 @@ public struct ChessView: View {
             // Coordinate labels
             if col == 0 {
                 Text("\(row + 1)")
-                    .font(.system(size: max(7, sq * 0.18), weight: .semibold))
-                    .foregroundColor((isLight ? darkColor : lightColor).opacity(0.75))
-                    .frame(width: sq, height: sq, alignment: .topLeading)
-                    .padding(2)
+                    .font(.system(size: max(7, sq * 0.17), weight: .semibold))
+                    .foregroundColor((isLight ? darkColor : lightColor).opacity(0.7))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .padding(1.5)
                     .allowsHitTesting(false)
             }
             if row == 0 {
                 Text(colFile(col))
-                    .font(.system(size: max(7, sq * 0.18), weight: .semibold))
-                    .foregroundColor((isLight ? darkColor : lightColor).opacity(0.75))
-                    .frame(width: sq, height: sq, alignment: .bottomTrailing)
-                    .padding(2)
+                    .font(.system(size: max(7, sq * 0.17), weight: .semibold))
+                    .foregroundColor((isLight ? darkColor : lightColor).opacity(0.7))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .padding(1.5)
                     .allowsHitTesting(false)
             }
         }
+        .frame(width: sq, height: sq)
         .accessibilityLabel("Square \(colFile(col))\(row + 1), \(pieceName(game.board[row][col]))")
     }
 
-    // ── SIDEBAR ───────────────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════════
+    // MARK: - SIDEBAR (landscape only)
+    // ═══════════════════════════════════════════════════════════════════════
 
     @ViewBuilder
     func sidebarView(width: CGFloat) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 6) {
             moveHistoryView
                 .frame(maxHeight: .infinity)
             capturedView
         }
-        .padding(.vertical, 10)
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder
     var moveHistoryView: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Move History")
-                    .font(.system(size: 15, weight: .bold))
+                Text("Moves")
+                    .font(.system(size: 13, weight: .bold))
                     .foregroundColor(.white)
                 Spacer()
                 Text("\(movePairs.count)")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(.white.opacity(0.35))
-                    .padding(.horizontal, 7).padding(.vertical, 2)
-                    .background(Color.white.opacity(0.08))
-                    .cornerRadius(6)
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundColor(.white.opacity(0.3))
+                    .padding(.horizontal, 6).padding(.vertical, 2)
+                    .background(Color.white.opacity(0.07))
+                    .cornerRadius(5)
             }
-            .padding(.horizontal, 12)
-            .padding(.top, 10)
-            .padding(.bottom, 6)
+            .padding(.horizontal, 10)
+            .padding(.top, 8)
+            .padding(.bottom, 5)
 
-            Divider().background(Color.white.opacity(0.15))
+            Divider().background(Color.white.opacity(0.12))
 
-            // Table header
             HStack(spacing: 0) {
                 Text("#")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.white.opacity(0.4))
-                    .frame(width: 24)
-                Text("White")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.white.opacity(0.4))
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white.opacity(0.35))
+                    .frame(width: 22)
+                Text("W")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white.opacity(0.35))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text("Black")
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.white.opacity(0.4))
+                Text("B")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(.white.opacity(0.35))
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 5)
-            .background(Color.white.opacity(0.04))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Color.white.opacity(0.03))
 
             ScrollViewReader { proxy in
                 ScrollView {
@@ -598,42 +678,42 @@ public struct ChessView: View {
                 }
             }
         }
-        .background(Color.black.opacity(0.28))
-        .cornerRadius(14)
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.1), lineWidth: 1))
+        .background(Color.black.opacity(0.25))
+        .cornerRadius(12)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.08), lineWidth: 1))
     }
 
     @ViewBuilder
     func moveRow(pair: (moveNumber: Int, white: String?, black: String?)) -> some View {
         HStack(spacing: 0) {
             Text("\(pair.moveNumber)")
-                .font(.system(size: 12))
-                .foregroundColor(.white.opacity(0.4))
-                .frame(width: 24)
+                .font(.system(size: 11))
+                .foregroundColor(.white.opacity(0.35))
+                .frame(width: 22)
 
-            HStack(spacing: 3) {
+            HStack(spacing: 2) {
                 if let wm = pair.white, let ico = pieceIcon(from: wm, color: .white) {
-                    Image(ico).resizable().frame(width: 14, height: 14)
+                    Image(ico).resizable().frame(width: 13, height: 13)
                 }
                 Text(pair.white ?? "")
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
                     .foregroundColor(.white)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            HStack(spacing: 3) {
+            HStack(spacing: 2) {
                 if let bm = pair.black, let ico = pieceIcon(from: bm, color: .black) {
-                    Image(ico).resizable().frame(width: 14, height: 14)
+                    Image(ico).resizable().frame(width: 13, height: 13)
                 }
                 Text(pair.black ?? "")
-                    .font(.system(size: 12))
-                    .foregroundColor(.white.opacity(0.8))
+                    .font(.system(size: 11))
+                    .foregroundColor(.white.opacity(0.75))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(pair.moveNumber % 2 == 0 ? Color.white.opacity(0.035) : Color.clear)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(pair.moveNumber % 2 == 0 ? Color.white.opacity(0.03) : Color.clear)
     }
 
     @ViewBuilder
@@ -641,58 +721,58 @@ public struct ChessView: View {
         VStack(spacing: 0) {
             HStack {
                 Text("Captured")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundColor(.white.opacity(0.6))
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundColor(.white.opacity(0.55))
                 Spacer()
                 let bal = materialBalance
                 if bal != 0 {
                     Text(bal > 0 ? "+\(bal)" : "\(bal)")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundColor(bal > 0 ? .green : .red)
-                        .padding(.horizontal, 7).padding(.vertical, 2)
+                        .padding(.horizontal, 6).padding(.vertical, 1)
                         .background(Capsule()
-                            .fill(bal > 0 ? Color.green.opacity(0.18) : Color.red.opacity(0.18)))
+                            .fill(bal > 0 ? Color.green.opacity(0.16) : Color.red.opacity(0.16)))
                 }
             }
-            .padding(.horizontal, 12).padding(.top, 8).padding(.bottom, 5)
+            .padding(.horizontal, 10).padding(.top, 7).padding(.bottom, 4)
 
-            Divider().background(Color.white.opacity(0.08)).padding(.horizontal, 12)
+            Divider().background(Color.white.opacity(0.06)).padding(.horizontal, 10)
 
             capturedRow(label: "You", pieces: game.capturedByWhite,
                         suffix: "black", dotColor: .white)
             capturedRow(label: "AI",  pieces: game.capturedByBlack,
                         suffix: "white", dotColor: Color(white: 0.3))
         }
-        .padding(.bottom, 8)
-        .background(RoundedRectangle(cornerRadius: 14).fill(Color.white.opacity(0.06)))
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.1), lineWidth: 1))
+        .padding(.bottom, 6)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white.opacity(0.05)))
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.08), lineWidth: 1))
     }
 
     @ViewBuilder
     func capturedRow(label: String, pieces: [PieceType], suffix: String, dotColor: Color) -> some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             HStack(spacing: 3) {
-                Circle().fill(dotColor).frame(width: 7, height: 7)
+                Circle().fill(dotColor).frame(width: 6, height: 6)
                     .overlay(Circle().stroke(Color.white.opacity(0.3), lineWidth: dotColor == .white ? 0 : 1))
                 Text(label)
-                    .font(.system(size: 11, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.white)
             }
-            .frame(width: 34, alignment: .leading)
+            .frame(width: 30, alignment: .leading)
 
             if pieces.isEmpty {
-                Text("—").font(.system(size: 11)).foregroundColor(.white.opacity(0.22))
+                Text("—").font(.system(size: 10)).foregroundColor(.white.opacity(0.2))
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 1) {
                         ForEach(Array(pieces.enumerated()), id: \.offset) { _, type in
                             Image("\(type.rawValue)_\(suffix)")
-                                .resizable().frame(width: 19, height: 19)
+                                .resizable().frame(width: 17, height: 17)
                         }
                     }
                 }
             }
         }
-        .padding(.horizontal, 12).padding(.vertical, 4)
+        .padding(.horizontal, 10).padding(.vertical, 3)
     }
 }
