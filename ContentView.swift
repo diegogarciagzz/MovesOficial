@@ -2,7 +2,7 @@ import SwiftUI
 import AVFoundation
 import Speech
 
-// ── Brand colors extracted from the MOVES logo ───────────────────────────
+// ── Brand colors ─────────────────────────────────────────────────────────
 private extension Color {
     static let movesNavy  = Color(red: 0.13, green: 0.17, blue: 0.27)
     static let movesDeep  = Color(red: 0.09, green: 0.11, blue: 0.18)
@@ -21,43 +21,38 @@ struct ContentView: View {
             GeometryReader { geo in
                 let w = geo.size.width
                 let h = geo.size.height
-                let isLandscape = w > h
 
                 ZStack {
-                    // ── Dark gradient background ─────────────────────
+                    // ── Background ────────────────────────────────────
                     LinearGradient(
                         colors: [Color.movesDeep, Color.movesNavy],
-                        startPoint: .top,
-                        endPoint: .bottom
+                        startPoint: .top, endPoint: .bottom
                     )
                     .ignoresSafeArea()
 
-                    // ── Chess pieces background image (subtle) ───────
                     Image("backgroundpiecessin")
                         .resizable()
                         .scaledToFill()
                         .opacity(0.12)
                         .ignoresSafeArea()
+                        .allowsHitTesting(false)
 
-                    // ── Decorative glow ──────────────────────────────
                     Circle()
                         .fill(Color.movesBlue.opacity(0.06))
-                        .frame(width: 360, height: 360)
-                        .blur(radius: 55)
-                        .offset(y: isLandscape ? 0 : -80)
+                        .frame(width: 340, height: 340)
+                        .blur(radius: 50)
 
-                    // ── Main content: adapts to landscape/portrait ───
-                    if isLandscape {
-                        landscapeLayout(w: w, h: h)
+                    // ── Content: always HStack (landscape-first) ─────
+                    // Fallback: if portrait, use VStack
+                    if w > h {
+                        landscapeContent(w: w, h: h)
                     } else {
-                        portraitLayout(w: w, h: h)
+                        portraitContent(w: w, h: h)
                     }
                 }
             }
             .navigationBarHidden(true)
-            .sheet(isPresented: $showAbout) {
-                AboutView()
-            }
+            .sheet(isPresented: $showAbout) { AboutView() }
             .onAppear {
                 if !permissionsRequested {
                     permissionsRequested = true
@@ -69,65 +64,28 @@ struct ContentView: View {
         }
     }
 
-    // ── PORTRAIT LAYOUT ──────────────────────────────────────────────────
+    // ── LANDSCAPE (primary) ──────────────────────────────────────────────
 
     @ViewBuilder
-    func portraitLayout(w: CGFloat, h: CGFloat) -> some View {
-        VStack(spacing: 0) {
-            Spacer()
-
-            // Logo
-            Image("sinfondo")
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: min(320, w * 0.75), maxHeight: h * 0.30)
-
-            Spacer().frame(height: h * 0.03)
-
-            // Voice badge
-            voiceBadge
-
-            Spacer().frame(height: h * 0.04)
-
-            // Play button
-            playButton
-
-            Spacer().frame(height: h * 0.02)
-
-            // About button
-            aboutButton
-
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    // ── LANDSCAPE LAYOUT ─────────────────────────────────────────────────
-
-    @ViewBuilder
-    func landscapeLayout(w: CGFloat, h: CGFloat) -> some View {
+    func landscapeContent(w: CGFloat, h: CGFloat) -> some View {
         HStack(spacing: 0) {
-            // Left side: logo
+            // Left: logo
             VStack {
                 Spacer()
                 Image("sinfondo")
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: w * 0.40, maxHeight: h * 0.65)
+                    .frame(maxWidth: w * 0.38, maxHeight: h * 0.65)
                 Spacer()
             }
             .frame(width: w * 0.45)
 
-            // Right side: buttons
-            VStack(spacing: 14) {
+            // Right: buttons
+            VStack(spacing: 16) {
                 Spacer()
-
                 voiceBadge
-
                 playButton
-
                 aboutButton
-
                 Spacer()
             }
             .frame(maxWidth: .infinity)
@@ -135,47 +93,81 @@ struct ContentView: View {
         .padding(.horizontal, 20)
     }
 
-    // ── Shared sub-views ─────────────────────────────────────────────────
+    // ── PORTRAIT (fallback) ──────────────────────────────────────────────
+
+    @ViewBuilder
+    func portraitContent(w: CGFloat, h: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            Image("sinfondo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: w * 0.65, height: h * 0.25)
+
+            Spacer().frame(height: 20)
+
+            voiceBadge
+
+            Spacer().frame(height: 20)
+
+            playButton
+
+            Spacer().frame(height: 12)
+
+            aboutButton
+
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+    }
+
+    // ── Shared components ────────────────────────────────────────────────
 
     @ViewBuilder
     var voiceBadge: some View {
         if speechAuthorized && microphoneAuthorized {
-            HStack(spacing: 8) {
+            HStack(spacing: 7) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
-                    .font(.system(size: 14))
+                    .foregroundColor(.green).font(.system(size: 13))
                 Text("Voice Control Ready")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.white.opacity(0.85))
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 8)
-            .background(Color.green.opacity(0.13))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18)
-                    .stroke(Color.green.opacity(0.3), lineWidth: 1)
-            )
-            .cornerRadius(18)
+            .padding(.horizontal, 16).padding(.vertical, 7)
+            .background(Color.green.opacity(0.12))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.green.opacity(0.3), lineWidth: 1))
+            .cornerRadius(16)
         }
     }
 
     @ViewBuilder
     var playButton: some View {
         NavigationLink(destination: ChessView().navigationBarBackButtonHidden(true)) {
-            Text("Play Accessible Chess")
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
-                .padding(.horizontal, 42)
-                .padding(.vertical, 16)
-                .background(
-                    LinearGradient(
-                        colors: [Color.movesMid, Color.movesBlue],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 26))
-                .shadow(color: Color.movesBlue.opacity(0.4), radius: 16, y: 5)
+            HStack(spacing: 10) {
+                Image(systemName: "play.fill")
+                    .font(.system(size: 16, weight: .bold))
+                Text("Start Game")
+                    .font(.system(size: 20, weight: .bold, design: .rounded))
+            }
+            .foregroundColor(.white)
+            .padding(.horizontal, 46)
+            .padding(.vertical, 18)
+            .background(
+                ZStack {
+                    RoundedRectangle(cornerRadius: 28)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color(red: 0.20, green: 0.55, blue: 0.35),
+                                         Color(red: 0.30, green: 0.72, blue: 0.45)],
+                                startPoint: .leading, endPoint: .trailing
+                            )
+                        )
+                    RoundedRectangle(cornerRadius: 28)
+                        .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                }
+            )
+            .shadow(color: Color(red: 0.25, green: 0.65, blue: 0.40).opacity(0.5), radius: 20, y: 6)
         }
     }
 
@@ -183,20 +175,14 @@ struct ContentView: View {
     var aboutButton: some View {
         Button { showAbout = true } label: {
             HStack(spacing: 6) {
-                Image(systemName: "info.circle")
-                    .font(.system(size: 13))
-                Text("About MOVES")
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                Image(systemName: "info.circle").font(.system(size: 12))
+                Text("About MOVES").font(.system(size: 13, weight: .medium, design: .rounded))
             }
-            .foregroundColor(Color.movesBlue.opacity(0.8))
-            .padding(.horizontal, 22)
-            .padding(.vertical, 10)
-            .background(Color.movesBlue.opacity(0.08))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18)
-                    .stroke(Color.movesBlue.opacity(0.25), lineWidth: 1)
-            )
-            .cornerRadius(18)
+            .foregroundColor(Color.movesBlue.opacity(0.75))
+            .padding(.horizontal, 20).padding(.vertical, 9)
+            .background(Color.movesBlue.opacity(0.07))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.movesBlue.opacity(0.2), lineWidth: 1))
+            .cornerRadius(16)
         }
     }
 

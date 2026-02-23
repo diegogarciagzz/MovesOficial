@@ -121,14 +121,7 @@ public struct ChessView: View {
                 : "Stalemate. It's a draw."
             speaker.speak(msg)
         }
-        .alert(isPresented: $showGameOverAlert) {
-            Alert(
-                title: Text("Game Over"),
-                message: Text(gameOverMessage),
-                primaryButton: .default(Text("New Game")) { showDifficultySelection = true },
-                secondaryButton: .cancel(Text("Stay")) { showResetButton = true }
-            )
-        }
+        // (game-over alert replaced by custom overlay below)
         .sheet(isPresented: $showPromotionSheet) { PromotionView(game: game) }
         .sheet(isPresented: $showDifficultySelection, onDismiss: {
             game.resetGame(difficulty: selectedDifficulty)
@@ -144,6 +137,24 @@ public struct ChessView: View {
             if showOnboarding {
                 OnboardingView(isPresented: $showOnboarding)
                     .transition(.opacity.animation(.easeInOut(duration: 0.35)))
+            }
+        }
+        .overlay {
+            if showGameOverAlert {
+                GameOverView(
+                    isCheckmate: game.isCheckmate,
+                    isStalemate: game.isStalemate,
+                    playerWins: game.isCheckmate && game.currentPlayer == .black,
+                    onPlayAgain: {
+                        showGameOverAlert = false
+                        showDifficultySelection = true
+                    },
+                    onMenu: {
+                        showGameOverAlert = false
+                        dismiss()
+                    }
+                )
+                .transition(.opacity.animation(.easeInOut(duration: 0.3)))
             }
         }
     }
