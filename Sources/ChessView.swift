@@ -190,7 +190,7 @@ public struct ChessView: View {
     func landscapeLayout(w: CGFloat, h: CGFloat) -> some View {
         let pad: CGFloat   = 10
         let gap: CGFloat   = 10
-        let topH: CGFloat  = 48
+        let topH: CGFloat  = 56
         let voiceH: CGFloat = 54
 
         // Board: square, driven strictly by available height
@@ -232,7 +232,7 @@ public struct ChessView: View {
     @ViewBuilder
     func portraitLayout(w: CGFloat, h: CGFloat) -> some View {
         let pad: CGFloat   = 10
-        let topH: CGFloat  = 48
+        let topH: CGFloat  = 56
         let voiceH: CGFloat = 56
 
         // Board: full width, capped so info panel still fits
@@ -431,17 +431,19 @@ public struct ChessView: View {
 
     @ViewBuilder
     var landscapeTopBar: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             // Back
             Button { dismiss() } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
-                    Text("Menu").font(.system(size: 12, weight: .semibold))
+                HStack(spacing: 5) {
+                    Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
+                    Text("Menú").font(.system(size: 13, weight: .semibold))
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 10).padding(.vertical, 7)
+                .padding(.horizontal, 14).padding(.vertical, 9)
                 .background(Color.white.opacity(0.1))
-                .cornerRadius(9)
+                .cornerRadius(10)
+                .overlay(RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 1))
             }
 
             Spacer()
@@ -463,16 +465,18 @@ public struct ChessView: View {
 
     @ViewBuilder
     var portraitTopBar: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Button { dismiss() } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
-                    Text("Menu").font(.system(size: 12, weight: .semibold))
+                HStack(spacing: 5) {
+                    Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
+                    Text("Menú").font(.system(size: 13, weight: .semibold))
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 10).padding(.vertical, 7)
+                .padding(.horizontal, 14).padding(.vertical, 9)
                 .background(Color.white.opacity(0.1))
-                .cornerRadius(9)
+                .cornerRadius(10)
+                .overlay(RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.white.opacity(0.15), lineWidth: 1))
             }
 
             Spacer()
@@ -492,18 +496,20 @@ public struct ChessView: View {
 
     @ViewBuilder
     var turnIndicator: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 7) {
             Circle()
                 .fill(game.currentPlayer == .white ? Color.white : Color(white: 0.15))
-                .frame(width: 9, height: 9)
-                .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 1))
-            Text(game.currentPlayer == .white ? "Your turn" : "AI…")
-                .font(.system(size: 11, weight: .medium))
-                .foregroundColor(.white.opacity(0.7))
+                .frame(width: 11, height: 11)
+                .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 1.5))
+            Text(game.currentPlayer == .white ? "Tu turno" : "IA…")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.white.opacity(0.85))
         }
-        .padding(.horizontal, 9).padding(.vertical, 6)
-        .background(Color.white.opacity(0.07))
-        .cornerRadius(8)
+        .padding(.horizontal, 13).padding(.vertical, 9)
+        .background(Color.white.opacity(0.09))
+        .cornerRadius(10)
+        .overlay(RoundedRectangle(cornerRadius: 10)
+            .stroke(Color.white.opacity(0.15), lineWidth: 1))
     }
 
     @ViewBuilder
@@ -524,14 +530,16 @@ public struct ChessView: View {
             showResetButton = false
             showDifficultySelection = true
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "arrow.clockwise").font(.system(size: 11, weight: .semibold))
-                Text("New").font(.system(size: 11, weight: .semibold))
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.clockwise").font(.system(size: 14, weight: .semibold))
+                Text("Nueva").font(.system(size: 13, weight: .semibold))
             }
             .foregroundColor(.white)
-            .padding(.horizontal, 9).padding(.vertical, 6)
+            .padding(.horizontal, 14).padding(.vertical, 9)
             .background(Color(red: 0.30, green: 0.42, blue: 0.58).opacity(0.55))
-            .cornerRadius(8)
+            .cornerRadius(10)
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(red: 0.52, green: 0.73, blue: 0.88).opacity(0.3), lineWidth: 1))
         }
     }
 
@@ -551,23 +559,32 @@ public struct ChessView: View {
                 }
             }
         } label: {
-            ZStack(alignment: .topTrailing) {
-                Image(systemName: "lightbulb.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(hintUsesLeft > 0 ? .yellow : .white.opacity(0.3))
-                    .frame(width: 32, height: 32)
-                    .background(Color.yellow.opacity(hintUsesLeft > 0 ? 0.15 : 0.05))
-                    .cornerRadius(8)
+            HStack(spacing: 6) {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(hintUsesLeft > 0 ? .yellow : .white.opacity(0.3))
 
-                if hintUsesLeft > 0 {
-                    Text("\(hintUsesLeft)")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 14, height: 14)
-                        .background(Circle().fill(Color.orange))
-                        .offset(x: 4, y: -4)
+                    if hintUsesLeft > 0 {
+                        Text("\(hintUsesLeft)")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 14, height: 14)
+                            .background(Circle().fill(Color.orange))
+                            .offset(x: 9, y: -7)
+                    }
                 }
+                .frame(width: 22, height: 22)
+
+                Text("Pista")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(hintUsesLeft > 0 ? .yellow : .white.opacity(0.3))
             }
+            .padding(.horizontal, 14).padding(.vertical, 9)
+            .background(Color.yellow.opacity(hintUsesLeft > 0 ? 0.15 : 0.05))
+            .cornerRadius(10)
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                .stroke(Color.yellow.opacity(hintUsesLeft > 0 ? 0.3 : 0.08), lineWidth: 1))
         }
         .disabled(hintUsesLeft <= 0 || game.currentPlayer != .white)
         .opacity(game.currentPlayer == .white ? 1 : 0.4)
@@ -583,12 +600,19 @@ public struct ChessView: View {
                 showThemePicker.toggle()
             }
         } label: {
-            Image(systemName: "paintpalette.fill")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(boardTheme.accent)
-                .frame(width: 32, height: 32)
-                .background(boardTheme.accent.opacity(0.15))
-                .cornerRadius(8)
+            HStack(spacing: 6) {
+                Image(systemName: "paintpalette.fill")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(boardTheme.accent)
+                Text("Tablero")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(boardTheme.accent)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 9)
+            .background(boardTheme.accent.opacity(0.15))
+            .cornerRadius(10)
+            .overlay(RoundedRectangle(cornerRadius: 10)
+                .stroke(boardTheme.accent.opacity(0.3), lineWidth: 1))
         }
         .accessibilityLabel("Change board theme")
     }
