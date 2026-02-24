@@ -46,26 +46,27 @@ struct DifficultySelectionView: View {
                 .blur(radius: 55)
                 .offset(y: -80)
 
+            // ── Centered, max-width container ─────────────────────────────
             VStack(spacing: 0) {
                 // Header
                 VStack(spacing: 8) {
                     Image(systemName: "crown.fill")
-                        .font(.system(size: 28))
+                        .font(.system(size: 26))
                         .foregroundColor(Color.dBlue.opacity(0.7))
-                        .padding(.top, 36)
+                        .padding(.top, 32)
 
                     Text("Choose Difficulty")
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
 
                     Text("How tough should your opponent be?")
-                        .font(.system(size: 15, weight: .regular, design: .rounded))
+                        .font(.system(size: 14, weight: .regular, design: .rounded))
                         .foregroundColor(.white.opacity(0.5))
-                        .padding(.bottom, 28)
+                        .padding(.bottom, 22)
                 }
 
-                // Difficulty cards
-                VStack(spacing: 14) {
+                // Difficulty cards — capped at 460 pts wide
+                VStack(spacing: 12) {
                     ForEach(levels, id: \.label) { item in
                         DifficultyCard(
                             level: item.level,
@@ -82,10 +83,12 @@ struct DifficultySelectionView: View {
                         }
                     }
                 }
-                .padding(.horizontal, 24)
+                .frame(maxWidth: 460)        // never wider than 460 pts
+                .padding(.horizontal, 32)    // inner breathing room
 
                 Spacer()
             }
+            .frame(maxWidth: .infinity)      // centers the VStack in the ZStack
         }
     }
 }
