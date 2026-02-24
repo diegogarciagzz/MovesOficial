@@ -24,6 +24,13 @@ public struct ChessView: View {
     @State private var microphoneAuthorized  = false
     @State private var showOnboarding        = false
 
+    // ── New feature state ──────────────────────────────────────────────────
+    @State private var boardTheme: BoardTheme = BoardTheme.saved
+    @State private var showThemePicker = false
+    @ObservedObject private var music = MusicManager.shared
+    @State private var hintMove: (from: (Int, Int), to: (Int, Int))? = nil
+    @State private var hintUsesLeft = 3
+
     public init() {
         _game = StateObject(wrappedValue: ChessGame(difficulty: .easy))
     }
@@ -74,6 +81,10 @@ public struct ChessView: View {
         if let t = game.lastMovePositions.to,   t == (row, col) { return true }
         return false
     }
+    func isHintSquare(row: Int, col: Int) -> Bool {
+        guard let h = hintMove else { return false }
+        return (h.from == (row, col)) || (h.to == (row, col))
+    }
 
     // ── Body ─────────────────────────────────────────────────────────────────
 
@@ -97,6 +108,11 @@ public struct ChessView: View {
                 } else {
                     portraitLayout(w: w, h: h)
                 }
+
+                // Theme picker overlay
+                if showThemePicker {
+                    themePickerOverlay
+                }
             }
         }
         .onAppear {
@@ -105,7 +121,10 @@ public struct ChessView: View {
             speechAuthorized     = p.speech
             microphoneAuthorized = p.mic
         }
-        .onDisappear { voiceManager.stopListening() }
+        .onDisappear {
+            voiceManager.stopListening()
+            music.stop()
+        }
         .onChange(of: game.lastMoveDescription) { desc in
             if !desc.isEmpty { speaker.speak(desc) }
         }
@@ -121,10 +140,16 @@ public struct ChessView: View {
                 : "Stalemate. It's a draw."
             speaker.speak(msg)
         }
+        .onChange(of: game.moveHistory.count) { _ in
+            // Clear hint when a move is made
+            hintMove = nil
+        }
         // (game-over alert replaced by custom overlay below)
         .sheet(isPresented: $showPromotionSheet) { PromotionView(game: game) }
         .sheet(isPresented: $showDifficultySelection, onDismiss: {
             game.resetGame(difficulty: selectedDifficulty)
+            hintUsesLeft = 3
+            hintMove = nil
             if !UserDefaults.standard.bool(forKey: "hasSeenOnboarding") {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
                     showOnboarding = true
@@ -178,7 +203,7 @@ public struct ChessView: View {
         let sq = boardSize / 8
 
         VStack(spacing: 0) {
-            // ── Top strip: back, status, reset ───────────────────
+            // ── Top strip: back, status, actions ───────────────
             landscapeTopBar
                 .frame(height: topH)
                 .padding(.horizontal, pad)
@@ -403,12 +428,12 @@ public struct ChessView: View {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // MARK: - TOP BARS (compact, no voice button here)
+    // MARK: - TOP BARS (compact, with undo/hint/music/theme)
     // ═══════════════════════════════════════════════════════════════════════
 
     @ViewBuilder
     var landscapeTopBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             // Back
             Button { dismiss() } label: {
                 HStack(spacing: 4) {
@@ -429,6 +454,12 @@ public struct ChessView: View {
             // Check
             if game.isInCheck { checkBadge }
 
+            // ── Action buttons ──
+            undoButton
+            hintButton
+            musicButton
+            themeButton
+
             // New game
             if showResetButton { newGameButton }
         }
@@ -436,7 +467,7 @@ public struct ChessView: View {
 
     @ViewBuilder
     var portraitTopBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Button { dismiss() } label: {
                 HStack(spacing: 4) {
                     Image(systemName: "chevron.left").font(.system(size: 12, weight: .semibold))
@@ -453,6 +484,11 @@ public struct ChessView: View {
             turnIndicator
 
             if game.isInCheck { checkBadge }
+
+            undoButton
+            hintButton
+            musicButton
+            themeButton
 
             if showResetButton { newGameButton }
         }
@@ -505,6 +541,193 @@ public struct ChessView: View {
         }
     }
 
+    // ── Undo ──
+
+    @ViewBuilder
+    var undoButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                game.undoMove()
+                // Undo AI's move too so player gets back to their turn
+                game.undoMove()
+                hintMove = nil
+            }
+        } label: {
+            Image(systemName: "arrow.uturn.backward")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(width: 32, height: 32)
+                .background(Color.white.opacity(game.boardHistory.count > 1 ? 0.12 : 0.05))
+                .cornerRadius(8)
+        }
+        .disabled(game.boardHistory.count <= 1 || game.currentPlayer != .white)
+        .opacity(game.boardHistory.count > 1 && game.currentPlayer == .white ? 1 : 0.4)
+        .accessibilityLabel("Undo last move")
+    }
+
+    // ── Hint ──
+
+    @ViewBuilder
+    var hintButton: some View {
+        Button {
+            if hintUsesLeft > 0, let hint = game.getHint() {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    hintMove = hint
+                    hintUsesLeft -= 1
+                }
+                // Auto-clear after 3 seconds
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    withAnimation { hintMove = nil }
+                }
+            }
+        } label: {
+            ZStack(alignment: .topTrailing) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(hintUsesLeft > 0 ? .yellow : .white.opacity(0.3))
+                    .frame(width: 32, height: 32)
+                    .background(Color.yellow.opacity(hintUsesLeft > 0 ? 0.15 : 0.05))
+                    .cornerRadius(8)
+
+                if hintUsesLeft > 0 {
+                    Text("\(hintUsesLeft)")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 14, height: 14)
+                        .background(Circle().fill(Color.orange))
+                        .offset(x: 4, y: -4)
+                }
+            }
+        }
+        .disabled(hintUsesLeft <= 0 || game.currentPlayer != .white)
+        .opacity(game.currentPlayer == .white ? 1 : 0.4)
+        .accessibilityLabel("Get hint, \(hintUsesLeft) remaining")
+    }
+
+    // ── Music toggle ──
+
+    @ViewBuilder
+    var musicButton: some View {
+        Button {
+            music.toggle()
+        } label: {
+            Image(systemName: music.isPlaying ? "speaker.wave.2.fill" : "speaker.slash.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(music.isPlaying ? Color(red: 0.52, green: 0.73, blue: 0.88) : .white.opacity(0.5))
+                .frame(width: 32, height: 32)
+                .background(Color.white.opacity(music.isPlaying ? 0.12 : 0.05))
+                .cornerRadius(8)
+        }
+        .accessibilityLabel(music.isPlaying ? "Stop music" : "Play ambient music")
+    }
+
+    // ── Theme button ──
+
+    @ViewBuilder
+    var themeButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                showThemePicker.toggle()
+            }
+        } label: {
+            Image(systemName: "paintpalette.fill")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(boardTheme.accent)
+                .frame(width: 32, height: 32)
+                .background(boardTheme.accent.opacity(0.15))
+                .cornerRadius(8)
+        }
+        .accessibilityLabel("Change board theme")
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MARK: - THEME PICKER OVERLAY
+    // ═══════════════════════════════════════════════════════════════════════
+
+    @ViewBuilder
+    var themePickerOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
+                .onTapGesture { withAnimation { showThemePicker = false } }
+
+            VStack(spacing: 12) {
+                Text("Board Theme")
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                    .padding(.top, 20)
+
+                ForEach(BoardTheme.allCases) { theme in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            boardTheme = theme
+                            theme.save()
+                            showThemePicker = false
+                        }
+                    } label: {
+                        HStack(spacing: 12) {
+                            // Mini board preview
+                            HStack(spacing: 0) {
+                                VStack(spacing: 0) {
+                                    Rectangle().fill(theme.lightSquare).frame(width: 16, height: 16)
+                                    Rectangle().fill(theme.darkSquare).frame(width: 16, height: 16)
+                                }
+                                VStack(spacing: 0) {
+                                    Rectangle().fill(theme.darkSquare).frame(width: 16, height: 16)
+                                    Rectangle().fill(theme.lightSquare).frame(width: 16, height: 16)
+                                }
+                            }
+                            .cornerRadius(4)
+
+                            Text(theme.displayName)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundColor(.white)
+
+                            Spacer()
+
+                            Image(systemName: theme.icon)
+                                .font(.system(size: 14))
+                                .foregroundColor(theme.accent)
+
+                            if boardTheme == theme {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.green)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(boardTheme == theme
+                                      ? theme.accent.opacity(0.15)
+                                      : Color.white.opacity(0.06))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(boardTheme == theme ? theme.accent.opacity(0.5) : Color.clear,
+                                        lineWidth: 1.5)
+                        )
+                    }
+                }
+
+                Spacer().frame(height: 8)
+            }
+            .padding(.horizontal, 20)
+            .frame(maxWidth: 340)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(Color(red: 0.12, green: 0.14, blue: 0.22))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+            )
+            .padding(.bottom, 12)
+            .shadow(color: .black.opacity(0.5), radius: 30)
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════════════════
     // MARK: - CHESS BOARD
     // ═══════════════════════════════════════════════════════════════════════
@@ -531,20 +754,27 @@ public struct ChessView: View {
     @ViewBuilder
     func squareView(row: Int, col: Int, sq: CGFloat) -> some View {
         let isLight = (row + col) % 2 == 0
-        let lightColor = Color(red: 0.93, green: 0.91, blue: 0.83)
-        let darkColor  = Color(red: 0.47, green: 0.58, blue: 0.34)
+        let lightColor = boardTheme.lightSquare
+        let darkColor  = boardTheme.darkSquare
         let isSelected = game.selectedPiece.map { $0.position == (row, col) } ?? false
+        let isHint = isHintSquare(row: row, col: col)
 
         ZStack {
             // Base square
             Rectangle()
                 .fill(isSelected
-                      ? (isLight ? Color(red: 1.0, green: 0.85, blue: 0.35)
-                                 : Color(red: 0.75, green: 0.65, blue: 0.2))
+                      ? (isLight ? boardTheme.selectedLight : boardTheme.selectedDark)
                       : (isLight ? lightColor : darkColor))
 
+            // Hint highlight (pulsing green glow)
+            if isHint && !isSelected {
+                Rectangle()
+                    .fill(Color.green.opacity(0.45))
+                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: hintMove != nil)
+            }
+
             // Last move highlight
-            if isLastMoveSquare(row: row, col: col) && !isSelected {
+            if isLastMoveSquare(row: row, col: col) && !isSelected && !isHint {
                 Rectangle().fill(Color.yellow.opacity(0.40))
             }
 
@@ -596,6 +826,17 @@ public struct ChessView: View {
                             }
                         }
                     }
+            }
+
+            // Hint arrow indicator on destination
+            if let h = hintMove, h.to == (row, col) {
+                Image(systemName: "arrowtriangle.down.fill")
+                    .font(.system(size: max(8, sq * 0.25)))
+                    .foregroundColor(.green)
+                    .shadow(color: .green.opacity(0.8), radius: 4)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, 1)
+                    .allowsHitTesting(false)
             }
 
             // Coordinate labels
@@ -673,18 +914,23 @@ public struct ChessView: View {
             .padding(.vertical, 4)
             .background(Color.white.opacity(0.03))
 
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(movePairs, id: \.moveNumber) { pair in
-                            moveRow(pair: pair)
-                                .id(pair.moveNumber)
+            if movePairs.isEmpty {
+                // ── Empty state decoration ──
+                emptyMoveHistoryView
+            } else {
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 0) {
+                            ForEach(movePairs, id: \.moveNumber) { pair in
+                                moveRow(pair: pair)
+                                    .id(pair.moveNumber)
+                            }
                         }
                     }
-                }
-                .onChange(of: game.moveHistory.count) { _ in
-                    if let last = movePairs.last {
-                        withAnimation { proxy.scrollTo(last.moveNumber, anchor: .bottom) }
+                    .onChange(of: game.moveHistory.count) { _ in
+                        if let last = movePairs.last {
+                            withAnimation { proxy.scrollTo(last.moveNumber, anchor: .bottom) }
+                        }
                     }
                 }
             }
@@ -692,6 +938,65 @@ public struct ChessView: View {
         .background(Color.black.opacity(0.25))
         .cornerRadius(12)
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.08), lineWidth: 1))
+    }
+
+    // ── Empty sidebar decoration ──
+
+    @ViewBuilder
+    var emptyMoveHistoryView: some View {
+        VStack(spacing: 10) {
+            Spacer()
+
+            // Decorative chess pieces pattern
+            HStack(spacing: 6) {
+                ForEach(["king_white", "queen_white", "rook_white"], id: \.self) { piece in
+                    Image(piece)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 28, height: 28)
+                        .opacity(0.2)
+                }
+            }
+
+            Text("No moves yet")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white.opacity(0.25))
+
+            // Chess tip
+            VStack(spacing: 4) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.yellow.opacity(0.4))
+                Text(chessTip)
+                    .font(.system(size: 10))
+                    .foregroundColor(.white.opacity(0.3))
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .padding(.horizontal, 8)
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 6)
+            .background(Color.white.opacity(0.03))
+            .cornerRadius(8)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+    }
+
+    private var chessTip: String {
+        let tips = [
+            "Control the center early with pawns and knights.",
+            "Castle early to protect your king.",
+            "Develop your pieces before attacking.",
+            "A knight on the rim is dim.",
+            "Try using voice: say \"e4\" or \"knight f3\".",
+            "Don't move the same piece twice in the opening.",
+            "Rooks are powerful on open files.",
+        ]
+        // Use move count as seed for consistent display
+        return tips[game.moveHistory.count % tips.count]
     }
 
     @ViewBuilder

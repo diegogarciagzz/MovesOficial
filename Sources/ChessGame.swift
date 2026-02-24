@@ -807,6 +807,58 @@ public class ChessGame: ObservableObject, @unchecked Sendable {
         return files[col]
     }
 
+    // MARK: - Hint
+
+    /// Returns the best move for the current player using a simple evaluation.
+    /// Result: (fromRow, fromCol, toRow, toCol) or nil if no moves.
+    func getHint() -> (from: (Int, Int), to: (Int, Int))? {
+        guard currentPlayer == .white else { return nil }
+        let pieces = board.flatMap { $0 }.compactMap { $0 }.filter { $0.color == .white }
+
+        var bestScore = Int.min
+        var bestMoves: [(from: (Int, Int), to: (Int, Int))] = []
+
+        for piece in pieces {
+            let moves = calculateLegalMoves(for: piece)
+            for move in moves {
+                // Simulate
+                let originalPiece = board[move.0][move.1]
+                let originalPos = piece.position
+                board[originalPos.0][originalPos.1] = nil
+                board[move.0][move.1] = ChessPiece(type: piece.type, color: piece.color,
+                                                    position: move, hasMoved: true)
+
+                let score = evaluateForWhite()
+
+                // Undo
+                board[originalPos.0][originalPos.1] = ChessPiece(type: piece.type, color: piece.color,
+                                                                  position: originalPos, hasMoved: piece.hasMoved)
+                board[move.0][move.1] = originalPiece
+
+                if score > bestScore {
+                    bestScore = score
+                    bestMoves = [(from: originalPos, to: move)]
+                } else if score == bestScore {
+                    bestMoves.append((from: originalPos, to: move))
+                }
+            }
+        }
+
+        return bestMoves.randomElement()
+    }
+
+    /// Simple board evaluation from white's perspective.
+    private func evaluateForWhite() -> Int {
+        var score = 0
+        for row in board {
+            for piece in row.compactMap({ $0 }) {
+                let val = pieceValue(piece.type)
+                score += piece.color == .white ? val : -val
+            }
+        }
+        return score
+    }
+
     // MARK: - Voice Command Move Helpers
 
     /// "e4", "knight c3", "bishop f4" — find the (unique) piece that can legally
