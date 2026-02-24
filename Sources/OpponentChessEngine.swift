@@ -45,7 +45,6 @@ class OpponentChessEngine: @unchecked Sendable{
         for piece in opponentPieces.shuffled() {
             let moves = game.calculateLegalMoves(for: piece)
             if let move = moves.randomElement() {
-                game.saveCurrentBoardState()
                 game.performMove(piece: piece, to: move)
                 return true
             }
@@ -94,7 +93,6 @@ class OpponentChessEngine: @unchecked Sendable{
             selectedMove = possibleMoves.randomElement()!
         }
 
-        game.saveCurrentBoardState()
         game.performMove(piece: selectedMove.piece, to: selectedMove.destination)
         return true
     }
@@ -111,7 +109,6 @@ class OpponentChessEngine: @unchecked Sendable{
         }
 
         // Execute the best move
-        game.saveCurrentBoardState()
         game.performMove(piece: bestMove.piece, to: bestMove.destination)
         return true
     }

@@ -66,8 +66,6 @@ public class ChessGame: ObservableObject, @unchecked Sendable {
     // Opponent engine
     var opponentEngine: OpponentChessEngine!
     
-    // Historical log of game
-    var boardHistory: [[[ChessPiece?]]] = []
     @Published var capturedByWhite: [PieceType] = []
     @Published var capturedByBlack: [PieceType] = []
 
@@ -408,9 +406,6 @@ public class ChessGame: ObservableObject, @unchecked Sendable {
         guard let selectedPiece = selectedPiece else { return false }
 
         if possibleMoves.contains(where: { $0 == position }) {
-            // Save the current board state before making the move
-            saveCurrentBoardState()
-
             performMove(piece: selectedPiece, to: position)
 
             // Deselect the piece and clear possible moves
@@ -712,44 +707,6 @@ public class ChessGame: ObservableObject, @unchecked Sendable {
             UINotificationFeedbackGenerator().notificationOccurred(.warning)
         }
 
-    }
-
-    
-    func saveCurrentBoardState() {
-        let boardCopy = board.map { row in
-            row.compactMap { piece in
-                if let piece = piece {
-                    return ChessPiece(
-                        type: piece.type,
-                        color: piece.color,
-                        position: piece.position,
-                        hasMoved: piece.hasMoved
-                    )
-                } else {
-                    return nil
-                }
-            }
-        }
-        boardHistory.append(boardCopy)
-    }
-    
-    func undoMove() {
-        // Check if there is a previous board state
-        guard !boardHistory.isEmpty else { return }
-
-        // Remove the last board state from history and set it as the current board
-        boardHistory.removeLast()
-        if let lastBoard = boardHistory.last {
-            board = lastBoard
-        }
-
-        // Switch the current player back
-        currentPlayer = currentPlayer.opponent
-
-        // Recalculate possible moves and game state
-        selectedPiece = nil
-        possibleMoves = []
-        updateGameState()
     }
 
     func hasLegalMoves(forColor color: PieceColor) -> Bool {

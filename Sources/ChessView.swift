@@ -27,7 +27,6 @@ public struct ChessView: View {
     // ── New feature state ──────────────────────────────────────────────────
     @State private var boardTheme: BoardTheme = BoardTheme.saved
     @State private var showThemePicker = false
-    @ObservedObject private var music = MusicManager.shared
     @State private var hintMove: (from: (Int, Int), to: (Int, Int))? = nil
     @State private var hintUsesLeft = 3
 
@@ -123,7 +122,6 @@ public struct ChessView: View {
         }
         .onDisappear {
             voiceManager.stopListening()
-            music.stop()
         }
         .onChange(of: game.lastMoveDescription) { desc in
             if !desc.isEmpty { speaker.speak(desc) }
@@ -428,7 +426,7 @@ public struct ChessView: View {
     }
 
     // ═══════════════════════════════════════════════════════════════════════
-    // MARK: - TOP BARS (compact, with undo/hint/music/theme)
+    // MARK: - TOP BARS (compact, with hint/theme)
     // ═══════════════════════════════════════════════════════════════════════
 
     @ViewBuilder
@@ -455,9 +453,7 @@ public struct ChessView: View {
             if game.isInCheck { checkBadge }
 
             // ── Action buttons ──
-            undoButton
             hintButton
-            musicButton
             themeButton
 
             // New game
@@ -485,9 +481,7 @@ public struct ChessView: View {
 
             if game.isInCheck { checkBadge }
 
-            undoButton
             hintButton
-            musicButton
             themeButton
 
             if showResetButton { newGameButton }
@@ -541,30 +535,6 @@ public struct ChessView: View {
         }
     }
 
-    // ── Undo ──
-
-    @ViewBuilder
-    var undoButton: some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                game.undoMove()
-                // Undo AI's move too so player gets back to their turn
-                game.undoMove()
-                hintMove = nil
-            }
-        } label: {
-            Image(systemName: "arrow.uturn.backward")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(.white)
-                .frame(width: 32, height: 32)
-                .background(Color.white.opacity(game.boardHistory.count > 1 ? 0.12 : 0.05))
-                .cornerRadius(8)
-        }
-        .disabled(game.boardHistory.count <= 1 || game.currentPlayer != .white)
-        .opacity(game.boardHistory.count > 1 && game.currentPlayer == .white ? 1 : 0.4)
-        .accessibilityLabel("Undo last move")
-    }
-
     // ── Hint ──
 
     @ViewBuilder
@@ -602,23 +572,6 @@ public struct ChessView: View {
         .disabled(hintUsesLeft <= 0 || game.currentPlayer != .white)
         .opacity(game.currentPlayer == .white ? 1 : 0.4)
         .accessibilityLabel("Get hint, \(hintUsesLeft) remaining")
-    }
-
-    // ── Music toggle ──
-
-    @ViewBuilder
-    var musicButton: some View {
-        Button {
-            music.toggle()
-        } label: {
-            Image(systemName: music.isPlaying ? "speaker.wave.2.fill" : "speaker.slash.fill")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(music.isPlaying ? Color(red: 0.52, green: 0.73, blue: 0.88) : .white.opacity(0.5))
-                .frame(width: 32, height: 32)
-                .background(Color.white.opacity(music.isPlaying ? 0.12 : 0.05))
-                .cornerRadius(8)
-        }
-        .accessibilityLabel(music.isPlaying ? "Stop music" : "Play ambient music")
     }
 
     // ── Theme button ──
