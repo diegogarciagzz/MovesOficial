@@ -5,120 +5,278 @@
 
 import SwiftUI
 
+// MARK: - Palette
+
 private extension Color {
-    static let aDeep = Color(red: 0.09, green: 0.11, blue: 0.18)
-    static let aNavy = Color(red: 0.13, green: 0.17, blue: 0.27)
+    static let aDeep = Color(red: 0.07, green: 0.09, blue: 0.16)
+    static let aNavy = Color(red: 0.11, green: 0.15, blue: 0.25)
     static let aBlue = Color(red: 0.52, green: 0.73, blue: 0.88)
     static let aMid  = Color(red: 0.30, green: 0.42, blue: 0.58)
+    static let aGold = Color(red: 0.95, green: 0.78, blue: 0.42)
 }
+
+// MARK: - Main View
 
 struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color.aDeep, Color.aNavy],
-                           startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
+            // Background
+            LinearGradient(
+                colors: [Color.aDeep, Color.aNavy, Color.aDeep],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+
+            // Ambient glow
+            Circle()
+                .fill(Color.aBlue.opacity(0.07))
+                .frame(width: 500, height: 500)
+                .blur(radius: 80)
+                .offset(x: -80, y: -160)
 
             Circle()
-                .fill(Color.aBlue.opacity(0.06))
-                .frame(width: 360, height: 360)
-                .blur(radius: 55)
-                .offset(y: -100)
+                .fill(Color.aGold.opacity(0.04))
+                .frame(width: 380, height: 380)
+                .blur(radius: 70)
+                .offset(x: 120, y: 300)
 
-            ScrollView {
+            ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
 
-                    // ── Header ────────────────────────────────────────────
+                    // ── Close button ──────────────────────────────────────
                     HStack {
                         Button { dismiss() } label: {
-                            HStack(spacing: 5) {
+                            HStack(spacing: 6) {
                                 Image(systemName: "xmark")
-                                    .font(.system(size: 13, weight: .semibold))
-                                Text("Close")
-                                    .font(.system(size: 14, weight: .medium))
+                                    .font(.system(size: 13, weight: .bold))
+                                Text("Cerrar")
+                                    .font(.system(size: 15, weight: .medium))
                             }
                             .foregroundColor(Color.aBlue)
-                            .padding(.horizontal, 16).padding(.vertical, 8)
+                            .padding(.horizontal, 18).padding(.vertical, 10)
                             .background(Color.aBlue.opacity(0.12))
-                            .cornerRadius(20)
+                            .cornerRadius(22)
+                            .overlay(RoundedRectangle(cornerRadius: 22)
+                                .stroke(Color.aBlue.opacity(0.2), lineWidth: 1))
                         }
                         Spacer()
                     }
-                    .padding(.horizontal, 28).padding(.top, 24).padding(.bottom, 4)
+                    .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 8)
 
-                    Image("sinfondo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxWidth: 200, maxHeight: 130)
-                        .padding(.bottom, 24)
+                    // ── Logo + title ──────────────────────────────────────
+                    VStack(spacing: 10) {
+                        Image("sinfondo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: 160, maxHeight: 100)
 
-                    // ── Story card ────────────────────────────────────────
-                    StoryCard(icon: "crown.fill", iconColor: Color.aBlue, title: "The Story Behind MOVES") {
-                        VStack(alignment: .leading, spacing: 14) {
-                            Text("I've played chess since I was a kid. I competed in tournaments and truly fell in love with the game.")
+                        Text("MOVES")
+                            .font(.system(size: 38, weight: .black, design: .rounded))
+                            .foregroundColor(.white)
+                            .kerning(6)
 
-                            Text("At one of those tournaments I met a blind man who was playing chess. I was amazed — and curious. How does he play on his phone?")
-
-                            Text("When I started looking at chess apps, the answer was sobering: **he basically can't.** None of them have meaningful accessibility features. No voice control, no audio feedback, nothing built for someone who can't see the screen.")
-
-                            Divider().background(Color.aBlue.opacity(0.2))
-
-                            Text("That moment stayed with me. MOVES is my answer to it — a chess app built from scratch so that **anyone**, sighted or not, can pick it up and play. Just your voice, just the game.")
-                                .foregroundColor(.white.opacity(0.85))
-                        }
+                        Text("Chess for everyone")
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .foregroundColor(Color.aBlue.opacity(0.8))
+                            .kerning(1)
                     }
+                    .padding(.bottom, 32)
 
-                    // ── Developer card ────────────────────────────────────
-                    StoryCard(icon: "person.fill", iconColor: Color.aMid, title: "About the Developer") {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Hi, I'm **Diego García** — a developer passionate about building things that actually matter.")
+                    // ═══════════════════════════════════════════════
+                    // Max-width container — looks great on iPad
+                    // ═══════════════════════════════════════════════
+                    VStack(spacing: 20) {
 
-                            Text("I believe great software should be for everyone. MOVES is one of my most personal projects, sitting right at the intersection of two things I love: chess and accessible technology.")
+                        // ── Photo gallery ─────────────────────────
+                        PhotoGallerySection()
 
-                            Divider().background(Color.aBlue.opacity(0.2))
+                        // ── Story card ────────────────────────────
+                        AboutCard(icon: "crown.fill", iconColor: Color.aGold,
+                                  title: "The Story Behind MOVES") {
+                            VStack(alignment: .leading, spacing: 16) {
+                                StoryParagraph(
+                                    icon: "figure.chess",
+                                    text: "I've played chess since I was a kid. I competed in tournaments and truly fell in love with the game."
+                                )
+                                StoryParagraph(
+                                    icon: "eye.slash",
+                                    text: "At one of those tournaments I met a blind man who was playing chess. I was amazed — and curious. **How does he play on his phone?**"
+                                )
+                                StoryParagraph(
+                                    icon: "exclamationmark.circle",
+                                    text: "When I started looking at chess apps, the answer was sobering: **he basically can't.** None of them have meaningful accessibility features."
+                                )
 
-                            HStack(spacing: 12) {
-                                TagPill(text: "Swift / SwiftUI")
-                                TagPill(text: "iOS Dev")
-                                TagPill(text: "Accessibility")
+                                Divider()
+                                    .background(Color.aBlue.opacity(0.2))
+                                    .padding(.vertical, 2)
+
+                                Text("That moment stayed with me. MOVES is my answer — a chess app built from scratch so that **anyone**, sighted or not, can pick it up and play. Just your voice, just the game.")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .lineSpacing(4)
                             }
                         }
-                    }
 
-                    // ── Voice commands card ───────────────────────────────
-                    StoryCard(icon: "mic.fill", iconColor: Color.aBlue, title: "How to Play by Voice") {
-                        VStack(alignment: .leading, spacing: 8) {
-                            VoiceLine(text: "\"e4\"",               desc: "move a pawn to e4")
-                            VoiceLine(text: "\"knight c3\"",        desc: "develop a knight")
-                            VoiceLine(text: "\"bishop c4\"",        desc: "place a bishop")
-                            VoiceLine(text: "\"e2 to e4\"",         desc: "explicit from → to")
-                            VoiceLine(text: "\"castle\"",            desc: "kingside castling")
-                            VoiceLine(text: "\"queenside castle\"", desc: "queenside castling")
+                        // ── Developer card ────────────────────────
+                        AboutCard(icon: "person.fill", iconColor: Color.aMid,
+                                  title: "About the Developer") {
+                            VStack(alignment: .leading, spacing: 14) {
+                                Text("Hi, I'm **Diego García** — a developer passionate about building things that actually matter.")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.white.opacity(0.85))
+                                    .lineSpacing(4)
+
+                                Text("I believe great software should be for everyone. MOVES is one of my most personal projects, sitting right at the intersection of two things I love: chess and accessible technology.")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.white.opacity(0.85))
+                                    .lineSpacing(4)
+
+                                Divider()
+                                    .background(Color.aBlue.opacity(0.2))
+                                    .padding(.vertical, 2)
+
+                                HStack(spacing: 10) {
+                                    TagPill(text: "Swift / SwiftUI", color: Color.aBlue)
+                                    TagPill(text: "iOS Dev", color: Color.aMid)
+                                    TagPill(text: "Accessibility", color: Color.aGold)
+                                }
+                            }
                         }
+
+                        // ── Voice commands card ───────────────────
+                        AboutCard(icon: "mic.fill", iconColor: Color.aBlue,
+                                  title: "How to Play by Voice") {
+                            VStack(alignment: .leading, spacing: 0) {
+                                ForEach(voiceCommands, id: \.0) { cmd in
+                                    VoiceLine(text: cmd.0, desc: cmd.1)
+                                        .padding(.vertical, 9)
+                                    if cmd.0 != voiceCommands.last!.0 {
+                                        Divider().background(Color.white.opacity(0.07))
+                                    }
+                                }
+                            }
+                        }
+
                     }
+                    .frame(maxWidth: 680) // iPad-optimized width cap
+                    .padding(.horizontal, 20)
 
                     // ── Footer ────────────────────────────────────────────
-                    VStack(spacing: 5) {
+                    VStack(spacing: 8) {
                         Image(systemName: "crown.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(Color.aBlue.opacity(0.5))
+                            .font(.system(size: 22))
+                            .foregroundColor(Color.aGold.opacity(0.4))
                         Text("MOVES  ·  Made with ♟ by Diego García")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.3))
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundColor(.white.opacity(0.25))
                     }
-                    .padding(.top, 8).padding(.bottom, 40)
+                    .padding(.top, 16).padding(.bottom, 50)
                 }
                 .frame(maxWidth: .infinity)
             }
         }
     }
+
+    private let voiceCommands: [(String, String)] = [
+        ("\"e4\"",               "mover un peón a e4"),
+        ("\"knight c3\"",        "desarrollar un caballo"),
+        ("\"bishop c4\"",        "colocar un alfil"),
+        ("\"e2 to e4\"",         "origen → destino explícito"),
+        ("\"castle\"",           "enroque corto"),
+        ("\"queenside castle\"", "enroque largo"),
+    ]
 }
 
-// ── Small reusable components ─────────────────────────────────────────────
+// MARK: - Photo Gallery
 
-private struct StoryCard<Content: View>: View {
+private struct PhotoGallerySection: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+
+            // Section label
+            HStack(spacing: 8) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(Color.aBlue)
+                    .frame(width: 3, height: 18)
+                Text("Behind the scenes")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(Color.aBlue.opacity(0.8))
+                    .kerning(0.5)
+            }
+            .padding(.horizontal, 4)
+
+            // Photos
+            HStack(spacing: 12) {
+                PhotoCard(imageName: "photo1", caption: "En el tablero")
+                PhotoCard(imageName: "photo2", caption: "Donde empezó todo")
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white.opacity(0.04))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+        )
+    }
+}
+
+private struct PhotoCard: View {
+    let imageName: String
+    let caption: String
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Photo
+            if UIImage(named: imageName) != nil {
+                Image(imageName)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 200)
+                    .clipped()
+            } else {
+                // Placeholder while photo not yet added
+                ZStack {
+                    Color.white.opacity(0.05)
+                    VStack(spacing: 8) {
+                        Image(systemName: "photo.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(Color.aBlue.opacity(0.4))
+                        Text("photo coming soon")
+                            .font(.system(size: 11))
+                            .foregroundColor(.white.opacity(0.3))
+                    }
+                }
+                .frame(maxWidth: .infinity, minHeight: 200)
+            }
+
+            // Caption bar
+            Text(caption)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.white.opacity(0.55))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(Color.black.opacity(0.35))
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Cards & Helpers
+
+private struct AboutCard<Content: View>: View {
     let icon: String
     let iconColor: Color
     let title: String
@@ -131,29 +289,45 @@ private struct StoryCard<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(spacing: 12) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 9)
+                    RoundedRectangle(cornerRadius: 11)
                         .fill(iconColor.opacity(0.18))
-                        .frame(width: 34, height: 34)
+                        .frame(width: 40, height: 40)
                     Image(systemName: icon)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(iconColor)
                 }
                 Text(title)
-                    .font(.system(size: 17, weight: .bold, design: .rounded))
+                    .font(.system(size: 19, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
             }
             content()
+        }
+        .padding(22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 20).fill(Color.white.opacity(0.05)))
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(Color.white.opacity(0.09), lineWidth: 1))
+    }
+}
+
+private struct StoryParagraph: View {
+    let icon: String
+    let text: String
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundColor(Color.aBlue.opacity(0.7))
+                .frame(width: 20, height: 20)
+                .padding(.top, 1)
+            Text(.init(text))
                 .font(.system(size: 15))
-                .foregroundColor(.white.opacity(0.82))
+                .foregroundColor(.white.opacity(0.85))
+                .lineSpacing(4)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(20)
-        .background(RoundedRectangle(cornerRadius: 18).fill(Color.white.opacity(0.06)))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.09), lineWidth: 1))
-        .padding(.horizontal, 20).padding(.bottom, 14)
     }
 }
 
@@ -161,27 +335,29 @@ private struct VoiceLine: View {
     let text: String
     let desc: String
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 14) {
             Text(text)
-                .font(.system(size: 13, design: .monospaced))
+                .font(.system(size: 14, design: .monospaced))
                 .foregroundColor(Color.aBlue)
-                .frame(width: 160, alignment: .leading)
+                .frame(minWidth: 160, alignment: .leading)
             Text(desc)
-                .font(.system(size: 13))
-                .foregroundColor(.white.opacity(0.65))
+                .font(.system(size: 14))
+                .foregroundColor(.white.opacity(0.6))
+            Spacer()
         }
     }
 }
 
 private struct TagPill: View {
     let text: String
+    let color: Color
     var body: some View {
         Text(text)
-            .font(.system(size: 12, weight: .medium))
-            .foregroundColor(Color.aBlue)
-            .padding(.horizontal, 12).padding(.vertical, 5)
-            .background(Color.aBlue.opacity(0.12))
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.aBlue.opacity(0.25), lineWidth: 1))
-            .cornerRadius(14)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(color)
+            .padding(.horizontal, 14).padding(.vertical, 7)
+            .background(color.opacity(0.12))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(color.opacity(0.25), lineWidth: 1))
+            .cornerRadius(16)
     }
 }
