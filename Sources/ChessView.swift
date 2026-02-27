@@ -144,7 +144,7 @@ public struct ChessView: View {
         }
         // (game-over alert replaced by custom overlay below)
         .sheet(isPresented: $showPromotionSheet) { PromotionView(game: game) }
-        .sheet(isPresented: $showDifficultySelection, onDismiss: {
+        .fullScreenCover(isPresented: $showDifficultySelection, onDismiss: {
             game.resetGame(difficulty: selectedDifficulty)
             hintUsesLeft = 3
             hintMove = nil
@@ -587,7 +587,7 @@ public struct ChessView: View {
             Button { dismiss() } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
-                    Text("Menú").font(.system(size: 13, weight: .semibold))
+                    Text("Menu").font(.system(size: 13, weight: .semibold))
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, 14).padding(.vertical, 9)
@@ -620,7 +620,7 @@ public struct ChessView: View {
             Button { dismiss() } label: {
                 HStack(spacing: 5) {
                     Image(systemName: "chevron.left").font(.system(size: 13, weight: .semibold))
-                    Text("Menú").font(.system(size: 13, weight: .semibold))
+                    Text("Menu").font(.system(size: 13, weight: .semibold))
                 }
                 .foregroundColor(.white)
                 .padding(.horizontal, 14).padding(.vertical, 9)
@@ -652,7 +652,7 @@ public struct ChessView: View {
                 .fill(game.currentPlayer == .white ? Color.white : Color(white: 0.15))
                 .frame(width: 11, height: 11)
                 .overlay(Circle().stroke(Color.white.opacity(0.5), lineWidth: 1.5))
-            Text(game.currentPlayer == .white ? "Tu turno" : "IA…")
+            Text(game.currentPlayer == .white ? "Your turn" : "AI…")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.white.opacity(0.85))
         }
@@ -683,7 +683,7 @@ public struct ChessView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "arrow.clockwise").font(.system(size: 14, weight: .semibold))
-                Text("Nueva").font(.system(size: 13, weight: .semibold))
+                Text("New").font(.system(size: 13, weight: .semibold))
             }
             .foregroundColor(.white)
             .padding(.horizontal, 14).padding(.vertical, 9)
@@ -727,7 +727,7 @@ public struct ChessView: View {
                 }
                 .frame(width: 22, height: 22)
 
-                Text("Pista")
+                Text("Hint")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(hintUsesLeft > 0 ? .yellow : .white.opacity(0.3))
             }
@@ -755,7 +755,7 @@ public struct ChessView: View {
                 Image(systemName: "paintpalette.fill")
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(boardTheme.accent)
-                Text("Tablero")
+                Text("Theme")
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundColor(boardTheme.accent)
             }

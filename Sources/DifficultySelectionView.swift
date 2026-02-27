@@ -84,24 +84,12 @@ struct DifficultySelectionView: View {
             VStack(spacing: 0) {
                 Spacer()
 
-                // Logo
+                // Logo — already includes the MOVES name
                 Image("sinfondo")
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: 110, maxHeight: 72)
-                    .padding(.bottom, 18)
-
-                // Title
-                Text("MOVES")
-                    .font(.system(size: 46, weight: .black, design: .rounded))
-                    .foregroundColor(.white)
-                    .kerning(6)
-                    .padding(.bottom, 6)
-
-                Text("Chess for everyone")
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundColor(Color.dBlue.opacity(0.8))
-                    .kerning(0.8)
+                    .frame(maxWidth: 160, maxHeight: 110)
+                    .padding(.bottom, 8)
 
                 // Decorative pieces row
                 HStack(spacing: 8) {

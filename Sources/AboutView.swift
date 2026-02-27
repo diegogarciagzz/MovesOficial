@@ -22,14 +22,12 @@ struct AboutView: View {
 
     var body: some View {
         ZStack {
-            // Background
             LinearGradient(
                 colors: [Color.aDeep, Color.aNavy, Color.aDeep],
                 startPoint: .topLeading, endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
 
-            // Ambient glow
             Circle()
                 .fill(Color.aBlue.opacity(0.07))
                 .frame(width: 500, height: 500)
@@ -65,34 +63,99 @@ struct AboutView: View {
                     }
                     .padding(.horizontal, 28).padding(.top, 28).padding(.bottom, 8)
 
-                    // ── Logo + title ──────────────────────────────────────
-                    VStack(spacing: 10) {
-                        Image("sinfondo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(maxWidth: 160, maxHeight: 100)
+                    // ── Logo only (no text — logo already says MOVES) ──────
+                    Image("sinfondo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxWidth: 220, maxHeight: 150)
+                        .padding(.bottom, 36)
 
-                        Text("MOVES")
-                            .font(.system(size: 38, weight: .black, design: .rounded))
-                            .foregroundColor(.white)
-                            .kerning(6)
-
-                        Text("Chess for everyone")
-                            .font(.system(size: 16, weight: .medium, design: .rounded))
-                            .foregroundColor(Color.aBlue.opacity(0.8))
-                            .kerning(1)
-                    }
-                    .padding(.bottom, 32)
-
-                    // ═══════════════════════════════════════════════
-                    // Max-width container — looks great on iPad
-                    // ═══════════════════════════════════════════════
+                    // ═══════════════════════════════════════════
+                    // Max-width container — iPad-optimized
+                    // ═══════════════════════════════════════════
                     VStack(spacing: 20) {
 
-                        // ── Photo gallery ─────────────────────────
-                        PhotoGallerySection()
+                        // 1 ── About the Developer ─────────────────────────
+                        AboutCard(icon: "person.fill", iconColor: Color.aMid,
+                                  title: "About the Developer") {
+                            VStack(alignment: .leading, spacing: 18) {
 
-                        // ── Story card ────────────────────────────
+                                Text("Hi, I'm **Diego García** — a developer, leader, and chess player who builds things that actually matter.")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .lineSpacing(4)
+
+                                // CS Society highlight
+                                HStack(alignment: .top, spacing: 14) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(Color.aGold.opacity(0.14))
+                                            .frame(width: 40, height: 40)
+                                        Image(systemName: "person.3.fill")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(Color.aGold)
+                                    }
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("President · CS Student Society")
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundColor(.white)
+                                        Text("Leading a 30+ member team, representing 1,000+ students. We organize large-scale academic and technical events and connect our community with industry.")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.white.opacity(0.65))
+                                            .lineSpacing(3)
+                                    }
+                                }
+                                .padding(14)
+                                .background(Color.aGold.opacity(0.06))
+                                .cornerRadius(12)
+                                .overlay(RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.aGold.opacity(0.18), lineWidth: 1))
+
+                                // SEITC / leadership highlight
+                                HStack(alignment: .top, spacing: 14) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(Color.aBlue.opacity(0.14))
+                                            .frame(width: 40, height: 40)
+                                        Image(systemName: "star.fill")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(Color.aBlue)
+                                    }
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Member · SEITC Leadership")
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundColor(.white)
+                                        Text("Part of a student-led initiative bringing engineering talent together. Helping peers grow, collaborate, and make an impact beyond the classroom.")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.white.opacity(0.65))
+                                            .lineSpacing(3)
+                                    }
+                                }
+                                .padding(14)
+                                .background(Color.aBlue.opacity(0.06))
+                                .cornerRadius(12)
+                                .overlay(RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.aBlue.opacity(0.18), lineWidth: 1))
+
+                                Text("I believe technology should lift everyone up. MOVES is the product of that belief — built for the community, with access and inclusion at its core.")
+                                    .font(.system(size: 15))
+                                    .foregroundColor(.white.opacity(0.85))
+                                    .lineSpacing(4)
+
+                                Divider().background(Color.aBlue.opacity(0.2))
+
+                                HStack(spacing: 10) {
+                                    TagPill(text: "Swift / SwiftUI", color: Color.aBlue)
+                                    TagPill(text: "iOS Dev", color: Color.aMid)
+                                    TagPill(text: "Accessibility", color: Color.aGold)
+                                }
+                            }
+                        }
+
+                        // 2 ── Photos ───────────────────────────────────────
+                        PhotoPairSection()
+
+                        // 3 ── Story ────────────────────────────────────────
                         AboutCard(icon: "crown.fill", iconColor: Color.aGold,
                                   title: "The Story Behind MOVES") {
                             VStack(alignment: .leading, spacing: 16) {
@@ -120,58 +183,7 @@ struct AboutView: View {
                             }
                         }
 
-                        // ── Developer card ────────────────────────
-                        AboutCard(icon: "person.fill", iconColor: Color.aMid,
-                                  title: "About the Developer") {
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("Hi, I'm **Diego García** — a developer who builds things that matter.")
-                                    .font(.system(size: 15))
-                                    .foregroundColor(.white.opacity(0.9))
-                                    .lineSpacing(4)
-
-                                // Community highlight
-                                HStack(alignment: .top, spacing: 14) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.aGold.opacity(0.14))
-                                            .frame(width: 38, height: 38)
-                                        Image(systemName: "person.3.fill")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(Color.aGold)
-                                    }
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("President, CS Student Society")
-                                            .font(.system(size: 14, weight: .bold))
-                                            .foregroundColor(.white)
-                                        Text("Leading a 30+ member team · Representing 1,000+ students · Organizing large-scale academic & technical events · Connecting students with industry")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(.white.opacity(0.65))
-                                            .lineSpacing(3)
-                                    }
-                                }
-                                .padding(14)
-                                .background(Color.aGold.opacity(0.06))
-                                .cornerRadius(12)
-                                .overlay(RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.aGold.opacity(0.18), lineWidth: 1))
-
-                                Text("I believe technology should lift everyone up. MOVES sits at the intersection of everything I care about: **building for the community, making access equal, and leaving no one behind.**")
-                                    .font(.system(size: 15))
-                                    .foregroundColor(.white.opacity(0.85))
-                                    .lineSpacing(4)
-
-                                Divider()
-                                    .background(Color.aBlue.opacity(0.2))
-
-                                HStack(spacing: 10) {
-                                    TagPill(text: "Swift / SwiftUI", color: Color.aBlue)
-                                    TagPill(text: "iOS Dev", color: Color.aMid)
-                                    TagPill(text: "Accessibility", color: Color.aGold)
-                                }
-                            }
-                        }
-
-                        // ── Voice commands card ───────────────────
+                        // 4 ── Voice commands ───────────────────────────────
                         AboutCard(icon: "mic.fill", iconColor: Color.aBlue,
                                   title: "How to Play by Voice") {
                             VStack(alignment: .leading, spacing: 0) {
@@ -186,7 +198,7 @@ struct AboutView: View {
                         }
 
                     }
-                    .frame(maxWidth: 680) // iPad-optimized width cap
+                    .frame(maxWidth: 680)
                     .padding(.horizontal, 20)
 
                     // ── Footer ────────────────────────────────────────────
@@ -215,82 +227,53 @@ struct AboutView: View {
     ]
 }
 
-// MARK: - Photo Gallery
+// MARK: - Photo Pair (simple, no frame)
 
-private struct PhotoGallerySection: View {
+private struct PhotoPairSection: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-
-            HStack(spacing: 8) {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.aBlue)
-                    .frame(width: 3, height: 18)
-                Text("Behind the scenes")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(Color.aBlue.opacity(0.8))
-                    .kerning(0.5)
-            }
-            .padding(.horizontal, 4)
-
-            HStack(spacing: 12) {
-                PhotoCard(imageName: "photo1", caption: "At the board")
-                PhotoCard(imageName: "photo2", caption: "Where it all started")
-            }
-            .frame(maxWidth: .infinity)
+        HStack(spacing: 14) {
+            SimplePhoto(imageName: "photo1", caption: "At the board")
+            SimplePhoto(imageName: "photo2", caption: "Where it all started")
         }
-        .padding(20)
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white.opacity(0.04))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.white.opacity(0.08), lineWidth: 1)
-        )
+        .frame(maxWidth: .infinity)
     }
 }
 
-private struct PhotoCard: View {
+private struct SimplePhoto: View {
     let imageName: String
     let caption: String
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 8) {
             if UIImage(named: imageName) != nil {
                 Image(imageName)
                     .resizable()
                     .scaledToFill()
                     .frame(maxWidth: .infinity)
-                    .frame(height: 200)
+                    .frame(height: 220)
                     .clipped()
+                    .cornerRadius(16)
             } else {
                 ZStack {
-                    Color.white.opacity(0.05)
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(Color.white.opacity(0.04))
                     VStack(spacing: 8) {
                         Image(systemName: "photo.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(Color.aBlue.opacity(0.4))
+                            .font(.system(size: 30))
+                            .foregroundColor(Color.aBlue.opacity(0.35))
                         Text("photo coming soon")
                             .font(.system(size: 11))
-                            .foregroundColor(.white.opacity(0.3))
+                            .foregroundColor(.white.opacity(0.25))
                     }
                 }
-                .frame(maxWidth: .infinity, minHeight: 200)
+                .frame(maxWidth: .infinity, minHeight: 220)
             }
 
             Text(caption)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.white.opacity(0.55))
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.white.opacity(0.45))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 9)
-                .background(Color.black.opacity(0.35))
         }
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
-        )
     }
 }
 
