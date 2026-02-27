@@ -188,15 +188,15 @@ public struct ChessView: View {
 
     @ViewBuilder
     func landscapeLayout(w: CGFloat, h: CGFloat) -> some View {
-        let pad: CGFloat   = 10
-        let gap: CGFloat   = 10
-        let topH: CGFloat  = 56
-        let voiceH: CGFloat = 54
+        let pad: CGFloat        = 10
+        let gap: CGFloat        = 10
+        let topH: CGFloat       = 56
+        let voicePanelW: CGFloat = 148
+        let sideW: CGFloat = min(200, w * 0.24)
 
-        // Board: square, driven strictly by available height
-        let availH  = h - topH - voiceH - pad * 2 - 4
-        let sideW: CGFloat = min(210, w * 0.26)
-        let availW  = w - pad * 2 - gap - sideW
+        // Board: square, driven by available height with voice panel on left
+        let availH    = h - topH - pad * 2
+        let availW    = w - pad * 2 - gap * 2 - sideW - voicePanelW
         let boardSize = max(160, min(availH, availW))
         let sq = boardSize / 8
 
@@ -206,13 +206,10 @@ public struct ChessView: View {
                 .frame(height: topH)
                 .padding(.horizontal, pad)
 
-            // ── Voice button: full width, prominent ──────────────
-            voiceButton
-                .frame(height: voiceH)
-                .padding(.horizontal, pad)
+            // ── Voice panel + Board + Sidebar ───────────────────
+            HStack(alignment: .top, spacing: gap) {
+                voiceSidePanel(boardSize: boardSize)
 
-            // ── Board + Sidebar ──────────────────────────────────
-            HStack(alignment: .center, spacing: gap) {
                 boardGrid(sq: sq, size: boardSize)
                     .shadow(color: .black.opacity(0.55), radius: 12)
 
@@ -223,6 +220,160 @@ public struct ChessView: View {
             .padding(.vertical, pad)
             .frame(maxHeight: .infinity)
         }
+    }
+
+    // ── Voice side panel (landscape only) ───────────────────────────────────
+
+    @ViewBuilder
+    func voiceSidePanel(boardSize: CGFloat) -> some View {
+        let accent = Color(red: 0.52, green: 0.73, blue: 0.88)
+
+        VStack(spacing: 0) {
+
+            // Header label
+            Text("VOICE")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundColor(.white.opacity(0.3))
+                .kerning(2.5)
+                .padding(.top, 14)
+                .padding(.bottom, 12)
+
+            // ── Mic button ────────────────────────────────
+            Button {
+                if speechAuthorized && microphoneAuthorized {
+                    voiceManager.startListening()
+                } else {
+                    voiceManager.errorMessage = "Enable Speech & Mic in Settings"
+                }
+            } label: {
+                ZStack {
+                    if voiceManager.isListening {
+                        Circle()
+                            .stroke(Color.red.opacity(0.35), lineWidth: 2)
+                            .frame(width: 66, height: 66)
+                            .scaleEffect(voiceManager.isListening ? 1.35 : 1.0)
+                            .opacity(voiceManager.isListening ? 0 : 1)
+                            .animation(
+                                .easeOut(duration: 1.1).repeatForever(autoreverses: false),
+                                value: voiceManager.isListening
+                            )
+                    }
+                    Circle()
+                        .fill(voiceManager.isListening
+                              ? Color.red.opacity(0.22)
+                              : accent.opacity(0.14))
+                        .frame(width: 52, height: 52)
+
+                    Image(systemName: voiceManager.isListening ? "mic.fill" : "mic")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundColor(voiceManager.isListening ? .red : accent)
+                        .scaleEffect(voiceManager.isListening ? 1.12 : 1.0)
+                        .animation(
+                            voiceManager.isListening
+                                ? .easeInOut(duration: 0.6).repeatForever(autoreverses: true)
+                                : .default,
+                            value: voiceManager.isListening
+                        )
+                }
+            }
+            .disabled(!speechAuthorized || !microphoneAuthorized)
+
+            // Status text
+            Text(voiceManager.isListening ? "Listening…" : "Tap to speak")
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(voiceManager.isListening ? .red.opacity(0.8) : .white.opacity(0.28))
+                .padding(.top, 8)
+                .padding(.bottom, 12)
+
+            Divider().background(Color.white.opacity(0.08))
+
+            // ── Live transcript ───────────────────────────
+            VStack(alignment: .leading, spacing: 5) {
+                Text("TRANSCRIPT")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(.white.opacity(0.2))
+                    .kerning(1.5)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 10)
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        let t = voiceManager.recognizedText
+                        let isPlaceholder = t.isEmpty || t == "Listening..."
+
+                        if isPlaceholder {
+                            VStack(alignment: .leading, spacing: 5) {
+                                Text("Try saying:")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(.white.opacity(0.18))
+                                ForEach(["\"e4\"", "\"knight c3\"",
+                                         "\"castle\"", "\"e2 to e4\""], id: \.self) { ex in
+                                    Text(ex)
+                                        .font(.system(size: 10, design: .monospaced))
+                                        .foregroundColor(.white.opacity(0.15))
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                        } else {
+                            Text(t)
+                                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                                .foregroundColor(voiceManager.isListening ? accent : .white.opacity(0.8))
+                                .padding(.horizontal, 12)
+                                .animation(.easeInOut(duration: 0.1), value: t)
+                        }
+
+                        if !voiceManager.errorMessage.isEmpty {
+                            Text(voiceManager.errorMessage)
+                                .font(.system(size: 11))
+                                .foregroundColor(.red.opacity(0.85))
+                                .padding(.horizontal, 12)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.bottom, 8)
+                }
+            }
+            .frame(maxHeight: .infinity)
+
+            Divider().background(Color.white.opacity(0.08))
+
+            // ── Bottom action ─────────────────────────────
+            if voiceManager.isListening {
+                Button { voiceManager.startListening() } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "stop.circle.fill").font(.system(size: 13))
+                        Text("Stop").font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundColor(.red.opacity(0.85))
+                    .padding(.horizontal, 14).padding(.vertical, 8)
+                    .background(Color.red.opacity(0.12))
+                    .cornerRadius(10)
+                    .overlay(RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.red.opacity(0.25), lineWidth: 1))
+                }
+                .padding(.vertical, 10)
+            } else {
+                Text("Auto-stops\nafter 5s")
+                    .font(.system(size: 9))
+                    .foregroundColor(.white.opacity(0.14))
+                    .multilineTextAlignment(.center)
+                    .padding(.vertical, 10)
+            }
+        }
+        .frame(width: 148, height: boardSize)
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.black.opacity(0.28))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(
+                    voiceManager.isListening
+                        ? Color.red.opacity(0.45)
+                        : Color.white.opacity(0.08),
+                    lineWidth: 1.5
+                )
+        )
     }
 
     // ═══════════════════════════════════════════════════════════════════════

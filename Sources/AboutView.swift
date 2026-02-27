@@ -51,7 +51,7 @@ struct AboutView: View {
                             HStack(spacing: 6) {
                                 Image(systemName: "xmark")
                                     .font(.system(size: 13, weight: .bold))
-                                Text("Cerrar")
+                                Text("Close")
                                     .font(.system(size: 15, weight: .medium))
                             }
                             .foregroundColor(Color.aBlue)
@@ -106,7 +106,7 @@ struct AboutView: View {
                                 )
                                 StoryParagraph(
                                     icon: "exclamationmark.circle",
-                                    text: "When I started looking at chess apps, the answer was sobering: **he basically can't.** None of them have meaningful accessibility features."
+                                    text: "When I started looking at chess apps, the answer was sobering: **he basically can't.** None of them have meaningful accessibility features — no voice control, no audio feedback, nothing built for someone who can't see the screen."
                                 )
 
                                 Divider()
@@ -123,20 +123,45 @@ struct AboutView: View {
                         // ── Developer card ────────────────────────
                         AboutCard(icon: "person.fill", iconColor: Color.aMid,
                                   title: "About the Developer") {
-                            VStack(alignment: .leading, spacing: 14) {
-                                Text("Hi, I'm **Diego García** — a developer passionate about building things that actually matter.")
+                            VStack(alignment: .leading, spacing: 16) {
+                                Text("Hi, I'm **Diego García** — a developer who builds things that matter.")
                                     .font(.system(size: 15))
-                                    .foregroundColor(.white.opacity(0.85))
+                                    .foregroundColor(.white.opacity(0.9))
                                     .lineSpacing(4)
 
-                                Text("I believe great software should be for everyone. MOVES is one of my most personal projects, sitting right at the intersection of two things I love: chess and accessible technology.")
+                                // Community highlight
+                                HStack(alignment: .top, spacing: 14) {
+                                    ZStack {
+                                        RoundedRectangle(cornerRadius: 10)
+                                            .fill(Color.aGold.opacity(0.14))
+                                            .frame(width: 38, height: 38)
+                                        Image(systemName: "person.3.fill")
+                                            .font(.system(size: 14, weight: .semibold))
+                                            .foregroundColor(Color.aGold)
+                                    }
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("President, CS Student Society")
+                                            .font(.system(size: 14, weight: .bold))
+                                            .foregroundColor(.white)
+                                        Text("Leading a 30+ member team · Representing 1,000+ students · Organizing large-scale academic & technical events · Connecting students with industry")
+                                            .font(.system(size: 13))
+                                            .foregroundColor(.white.opacity(0.65))
+                                            .lineSpacing(3)
+                                    }
+                                }
+                                .padding(14)
+                                .background(Color.aGold.opacity(0.06))
+                                .cornerRadius(12)
+                                .overlay(RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.aGold.opacity(0.18), lineWidth: 1))
+
+                                Text("I believe technology should lift everyone up. MOVES sits at the intersection of everything I care about: **building for the community, making access equal, and leaving no one behind.**")
                                     .font(.system(size: 15))
                                     .foregroundColor(.white.opacity(0.85))
                                     .lineSpacing(4)
 
                                 Divider()
                                     .background(Color.aBlue.opacity(0.2))
-                                    .padding(.vertical, 2)
 
                                 HStack(spacing: 10) {
                                     TagPill(text: "Swift / SwiftUI", color: Color.aBlue)
@@ -181,12 +206,12 @@ struct AboutView: View {
     }
 
     private let voiceCommands: [(String, String)] = [
-        ("\"e4\"",               "mover un peón a e4"),
-        ("\"knight c3\"",        "desarrollar un caballo"),
-        ("\"bishop c4\"",        "colocar un alfil"),
-        ("\"e2 to e4\"",         "origen → destino explícito"),
-        ("\"castle\"",           "enroque corto"),
-        ("\"queenside castle\"", "enroque largo"),
+        ("\"e4\"",               "move a pawn to e4"),
+        ("\"knight c3\"",        "develop a knight"),
+        ("\"bishop c4\"",        "place a bishop"),
+        ("\"e2 to e4\"",         "explicit from → to"),
+        ("\"castle\"",           "kingside castling"),
+        ("\"queenside castle\"", "queenside castling"),
     ]
 }
 
@@ -196,7 +221,6 @@ private struct PhotoGallerySection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
 
-            // Section label
             HStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color.aBlue)
@@ -208,10 +232,9 @@ private struct PhotoGallerySection: View {
             }
             .padding(.horizontal, 4)
 
-            // Photos
             HStack(spacing: 12) {
-                PhotoCard(imageName: "photo1", caption: "En el tablero")
-                PhotoCard(imageName: "photo2", caption: "Donde empezó todo")
+                PhotoCard(imageName: "photo1", caption: "At the board")
+                PhotoCard(imageName: "photo2", caption: "Where it all started")
             }
             .frame(maxWidth: .infinity)
         }
@@ -233,7 +256,6 @@ private struct PhotoCard: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Photo
             if UIImage(named: imageName) != nil {
                 Image(imageName)
                     .resizable()
@@ -242,7 +264,6 @@ private struct PhotoCard: View {
                     .frame(height: 200)
                     .clipped()
             } else {
-                // Placeholder while photo not yet added
                 ZStack {
                     Color.white.opacity(0.05)
                     VStack(spacing: 8) {
@@ -257,7 +278,6 @@ private struct PhotoCard: View {
                 .frame(maxWidth: .infinity, minHeight: 200)
             }
 
-            // Caption bar
             Text(caption)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.white.opacity(0.55))

@@ -2,14 +2,17 @@
 //  DifficultySelectionView.swift
 //  MovesDiego
 //
+//  Landscape-first iPad layout: hero panel left, difficulty cards right.
+//
 
 import SwiftUI
 
 private extension Color {
-    static let dDeep = Color(red: 0.08, green: 0.09, blue: 0.14)
-    static let dNavy = Color(red: 0.13, green: 0.17, blue: 0.27)
+    static let dDeep = Color(red: 0.07, green: 0.09, blue: 0.15)
+    static let dNavy = Color(red: 0.12, green: 0.16, blue: 0.26)
     static let dBlue = Color(red: 0.52, green: 0.73, blue: 0.88)
     static let dMid  = Color(red: 0.30, green: 0.42, blue: 0.58)
+    static let dGold = Color(red: 0.95, green: 0.78, blue: 0.42)
 }
 
 struct DifficultySelectionView: View {
@@ -34,64 +37,141 @@ struct DifficultySelectionView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color.dDeep, Color.dNavy],
-                startPoint: .top, endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            Color.dDeep.ignoresSafeArea()
 
+            // Ambient glows
             Circle()
-                .fill(Color.dBlue.opacity(0.07))
-                .frame(width: 340, height: 340)
-                .blur(radius: 55)
-                .offset(y: -80)
+                .fill(Color.dBlue.opacity(0.08))
+                .frame(width: 420, height: 420)
+                .blur(radius: 60)
+                .offset(x: -180, y: -60)
+            Circle()
+                .fill(Color.dGold.opacity(0.05))
+                .frame(width: 300, height: 300)
+                .blur(radius: 60)
+                .offset(x: 220, y: 200)
 
-            // ── Centered, max-width container ─────────────────────────────
-            VStack(spacing: 0) {
-                // Header
-                VStack(spacing: 8) {
-                    Image(systemName: "crown.fill")
-                        .font(.system(size: 26))
-                        .foregroundColor(Color.dBlue.opacity(0.7))
-                        .padding(.top, 32)
+            GeometryReader { geo in
+                HStack(spacing: 0) {
+                    // ── Left: hero branding panel ──────────────────────────
+                    heroPanel
+                        .frame(width: geo.size.width * 0.40)
 
-                    Text("Choose Difficulty")
-                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
+                    // Subtle divider
+                    Rectangle()
+                        .fill(Color.white.opacity(0.07))
+                        .frame(width: 1)
+                        .padding(.vertical, 40)
 
-                    Text("How tough should your opponent be?")
-                        .font(.system(size: 14, weight: .regular, design: .rounded))
-                        .foregroundColor(.white.opacity(0.5))
-                        .padding(.bottom, 22)
+                    // ── Right: selection panel ─────────────────────────────
+                    selectionPanel
+                        .frame(maxWidth: .infinity)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
 
-                // Difficulty cards — capped at 460 pts wide
-                VStack(spacing: 12) {
-                    ForEach(levels, id: \.label) { item in
-                        DifficultyCard(
-                            level: item.level,
-                            label: item.label,
-                            piece: item.piece,
-                            description: item.description,
-                            accent: item.accent,
-                            isSelected: selectedDifficulty == item.level
-                        ) {
-                            selectedDifficulty = item.level
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-                                presentationMode.wrappedValue.dismiss()
-                            }
+    // MARK: - Hero Panel (left)
+
+    private var heroPanel: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color.dBlue.opacity(0.05), Color.dGold.opacity(0.04)],
+                startPoint: .topLeading, endPoint: .bottomTrailing
+            )
+
+            VStack(spacing: 0) {
+                Spacer()
+
+                // Logo
+                Image("sinfondo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 110, maxHeight: 72)
+                    .padding(.bottom, 18)
+
+                // Title
+                Text("MOVES")
+                    .font(.system(size: 46, weight: .black, design: .rounded))
+                    .foregroundColor(.white)
+                    .kerning(6)
+                    .padding(.bottom, 6)
+
+                Text("Chess for everyone")
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundColor(Color.dBlue.opacity(0.8))
+                    .kerning(0.8)
+
+                // Decorative pieces row
+                HStack(spacing: 8) {
+                    ForEach(["pawn_white", "knight_white", "bishop_white",
+                              "rook_white", "queen_white"], id: \.self) { p in
+                        Image(p)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 22, height: 22)
+                            .opacity(0.22)
+                    }
+                }
+                .padding(.top, 22)
+
+                Spacer()
+
+                Text("Made with ♟ by Diego García")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(.white.opacity(0.18))
+                    .padding(.bottom, 32)
+            }
+            .padding(.horizontal, 28)
+        }
+    }
+
+    // MARK: - Selection Panel (right)
+
+    private var selectionPanel: some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            // Header
+            VStack(spacing: 6) {
+                Text("Choose Difficulty")
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundColor(.white)
+                Text("How tough should your opponent be?")
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.45))
+            }
+            .padding(.bottom, 28)
+
+            // Cards
+            VStack(spacing: 14) {
+                ForEach(levels, id: \.label) { item in
+                    DifficultyCard(
+                        level: item.level,
+                        label: item.label,
+                        piece: item.piece,
+                        description: item.description,
+                        accent: item.accent,
+                        isSelected: selectedDifficulty == item.level
+                    ) {
+                        selectedDifficulty = item.level
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
+                            presentationMode.wrappedValue.dismiss()
                         }
                     }
                 }
-                .frame(maxWidth: 460)        // never wider than 460 pts
-                .padding(.horizontal, 32)    // inner breathing room
-
-                Spacer()
             }
-            .frame(maxWidth: .infinity)      // centers the VStack in the ZStack
+            .frame(maxWidth: 480)
+            .padding(.horizontal, 36)
+
+            Spacer()
         }
+        .frame(maxWidth: .infinity)
     }
 }
+
+// MARK: - Difficulty Card
 
 private struct DifficultyCard: View {
     let level: DifficultyLevel
@@ -104,42 +184,47 @@ private struct DifficultyCard: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
+            HStack(spacing: 18) {
                 // Piece icon
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(accent.opacity(0.18))
-                        .frame(width: 52, height: 52)
+                    RoundedRectangle(cornerRadius: 13)
+                        .fill(accent.opacity(isSelected ? 0.25 : 0.14))
+                        .frame(width: 56, height: 56)
                     Image(piece)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 36, height: 36)
+                        .frame(width: 38, height: 38)
                 }
 
                 // Labels
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(label)
                         .font(.system(size: 18, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                     Text(description)
                         .font(.system(size: 13))
-                        .foregroundColor(.white.opacity(0.55))
+                        .foregroundColor(.white.opacity(0.52))
                 }
 
                 Spacer()
 
                 // Selection indicator
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 20))
-                    .foregroundColor(isSelected ? accent : Color.white.opacity(0.25))
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? accent.opacity(0.2) : Color.clear)
+                        .frame(width: 28, height: 28)
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 22))
+                        .foregroundColor(isSelected ? accent : Color.white.opacity(0.2))
+                }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: 16)
+                RoundedRectangle(cornerRadius: 18)
                     .fill(Color.white.opacity(isSelected ? 0.1 : 0.05))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 16)
+                        RoundedRectangle(cornerRadius: 18)
                             .stroke(isSelected ? accent.opacity(0.7) : Color.white.opacity(0.08),
                                     lineWidth: isSelected ? 1.5 : 1)
                     )
