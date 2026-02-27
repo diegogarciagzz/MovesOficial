@@ -5,11 +5,12 @@ import AVFoundation
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MARK: - Landscape Hosting Controller
-// Overrides supportedInterfaceOrientations at the UIKit level — the ONLY
-// approach that is 100% reliable on all iPadOS versions.
+//
+// Subclasses UIHostingController to override orientation at the UIKit level.
+// This is the ONLY approach that reliably blocks portrait on all iPadOS versions.
 // ═══════════════════════════════════════════════════════════════════════════
 
-private final class LandscapeHostingController: UIHostingController<AnyView> {
+final class LandscapeHostingController: UIHostingController<AnyView> {
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         return .landscape
     }
@@ -23,8 +24,10 @@ private final class LandscapeHostingController: UIHostingController<AnyView> {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MARK: - Scene Delegate
-// Creates the window using LandscapeHostingController instead of the default
-// UIHostingController that SwiftUI would normally use.
+//
+// Creates UIWindow with LandscapeHostingController as root view controller.
+// Called because AppDelegate.configurationForConnecting returns this class
+// AND Info.plist has UIApplicationSceneManifest (required to activate scene lifecycle).
 // ═══════════════════════════════════════════════════════════════════════════
 
 class SceneDelegate: NSObject, UIWindowSceneDelegate {
@@ -46,7 +49,6 @@ class SceneDelegate: NSObject, UIWindowSceneDelegate {
 // ═══════════════════════════════════════════════════════════════════════════
 
 class AppDelegate: NSObject, UIApplicationDelegate {
-    // Belt-and-suspenders: also lock at the application level
     func application(
         _ application: UIApplication,
         supportedInterfaceOrientationsFor window: UIWindow?
@@ -54,7 +56,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         return .landscape
     }
 
-    // Tell the system to use our SceneDelegate (which sets up LandscapeHostingController)
     func application(
         _ application: UIApplication,
         configurationForConnecting connectingSceneSession: UISceneSession,
@@ -67,9 +68,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MARK: - Entry Point
-// WindowGroup is declared here but the actual window is managed by SceneDelegate.
-// SwiftUI detects that the scene delegate already created a window and defers.
+// MARK: - App Entry Point
+//
+// @main is kept here. The WindowGroup content is managed by SceneDelegate —
+// SwiftUI detects the scene delegate created a window and defers to it.
 // ═══════════════════════════════════════════════════════════════════════════
 
 @main
@@ -78,13 +80,13 @@ struct MOVESApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView() // SceneDelegate owns the real window; this is a fallback
+            ContentView()
         }
     }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// MARK: - enforceLandscape() helper (kept for requestGeometryUpdate on iOS 16+)
+// MARK: - enforceLandscape() — extra safety layer on iOS 16+
 // ═══════════════════════════════════════════════════════════════════════════
 
 func enforceLandscape() {
