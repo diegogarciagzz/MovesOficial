@@ -95,29 +95,49 @@ struct ContentView: View {
     }
 
     // ── PORTRAIT ─────────────────────────────────────────────────────────
+    // Fresh standalone layout — covers the parent ZStack entirely.
 
     @ViewBuilder
     func portraitContent(w: CGFloat, h: CGFloat) -> some View {
-        VStack(spacing: 0) {
-            Spacer()
+        ZStack {
+            // ── Own background (hides parent layers) ──────────────────
+            LinearGradient(
+                colors: [Color(red: 0.07, green: 0.10, blue: 0.18),
+                         Color(red: 0.13, green: 0.18, blue: 0.29)],
+                startPoint: .top, endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
-            Image("sinfondo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: w * 0.55)
-                .padding(.bottom, 40)
+            // Soft ambient glow centred behind the logo
+            Circle()
+                .fill(Color.movesBlue.opacity(0.10))
+                .frame(width: 320, height: 320)
+                .blur(radius: 65)
+                .offset(y: -h * 0.12)
 
-            voiceBadge
-                .padding(.bottom, 14)
+            // ── Content ───────────────────────────────────────────────
+            VStack(spacing: 0) {
+                Spacer()
 
-            playButton
+                Image("sinfondo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: min(w * 0.68, 320))
+                    .padding(.bottom, 42)
 
-            aboutButton
-                .padding(.top, 10)
+                voiceBadge
+                    .padding(.bottom, 20)
 
-            Spacer()
+                playButton
+
+                aboutButton
+                    .padding(.top, 16)
+
+                Spacer()
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 36)
         }
-        .frame(maxWidth: .infinity)
     }
 
     // ── Shared components ────────────────────────────────────────────────
