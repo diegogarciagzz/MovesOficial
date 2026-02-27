@@ -42,17 +42,12 @@ struct ContentView: View {
                         .frame(width: 340, height: 340)
                         .blur(radius: 50)
 
-                    // ── Content: always HStack (landscape-first) ─────
-                    // Fallback: if portrait, use VStack
-                    if w > h {
-                        landscapeContent(w: w, h: h)
-                    } else {
-                        portraitContent(w: w, h: h)
-                    }
+                    // ── Always landscape — orientation is locked ────────
+                    landscapeContent(w: max(w, h), h: min(w, h))
                 }
             }
             .navigationBarHidden(true)
-            .sheet(isPresented: $showAbout) { AboutView() }
+            .fullScreenCover(isPresented: $showAbout) { AboutView() }
             .onAppear {
                 if !permissionsRequested {
                     permissionsRequested = true
@@ -91,35 +86,6 @@ struct ContentView: View {
             .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 20)
-    }
-
-    // ── PORTRAIT (fallback) ──────────────────────────────────────────────
-
-    @ViewBuilder
-    func portraitContent(w: CGFloat, h: CGFloat) -> some View {
-        VStack(spacing: 0) {
-            Spacer()
-
-            Image("sinfondo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: w * 0.65, height: h * 0.25)
-
-            Spacer().frame(height: 20)
-
-            voiceBadge
-
-            Spacer().frame(height: 20)
-
-            playButton
-
-            Spacer().frame(height: 12)
-
-            aboutButton
-
-            Spacer()
-        }
-        .padding(.horizontal, 16)
     }
 
     // ── Shared components ────────────────────────────────────────────────
