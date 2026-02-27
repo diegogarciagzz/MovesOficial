@@ -30,12 +30,15 @@ struct ContentView: View {
                     )
                     .ignoresSafeArea()
 
-                    Image("backgroundpiecessin")
-                        .resizable()
-                        .scaledToFill()
-                        .opacity(0.12)
-                        .ignoresSafeArea()
-                        .allowsHitTesting(false)
+                    // Chess-piece texture — landscape only (causes glitches in portrait)
+                    if w > h {
+                        Image("backgroundpiecessin")
+                            .resizable()
+                            .scaledToFill()
+                            .opacity(0.12)
+                            .ignoresSafeArea()
+                            .allowsHitTesting(false)
+                    }
 
                     Circle()
                         .fill(Color.movesBlue.opacity(0.06))
@@ -95,49 +98,31 @@ struct ContentView: View {
     }
 
     // ── PORTRAIT ─────────────────────────────────────────────────────────
-    // Fresh standalone layout — covers the parent ZStack entirely.
+    // Fixed frame gives Spacers a real height to expand into.
 
     @ViewBuilder
     func portraitContent(w: CGFloat, h: CGFloat) -> some View {
-        ZStack {
-            // ── Own background (hides parent layers) ──────────────────
-            LinearGradient(
-                colors: [Color(red: 0.07, green: 0.10, blue: 0.18),
-                         Color(red: 0.13, green: 0.18, blue: 0.29)],
-                startPoint: .top, endPoint: .bottom
-            )
-            .ignoresSafeArea()
+        VStack(spacing: 0) {
+            Spacer()
 
-            // Soft ambient glow centred behind the logo
-            Circle()
-                .fill(Color.movesBlue.opacity(0.10))
-                .frame(width: 320, height: 320)
-                .blur(radius: 65)
-                .offset(y: -h * 0.12)
+            Image("sinfondo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: min(w * 0.65, 300))
+                .padding(.bottom, 40)
 
-            // ── Content ───────────────────────────────────────────────
-            VStack(spacing: 0) {
-                Spacer()
+            voiceBadge
+                .padding(.bottom, 18)
 
-                Image("sinfondo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: min(w * 0.68, 320))
-                    .padding(.bottom, 42)
+            playButton
 
-                voiceBadge
-                    .padding(.bottom, 20)
+            aboutButton
+                .padding(.top, 14)
 
-                playButton
-
-                aboutButton
-                    .padding(.top, 16)
-
-                Spacer()
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 36)
+            Spacer()
         }
+        .frame(width: w, height: h)
+        .padding(.horizontal, 32)
     }
 
     // ── Shared components ────────────────────────────────────────────────
