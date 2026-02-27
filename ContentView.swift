@@ -42,8 +42,11 @@ struct ContentView: View {
                         .frame(width: 340, height: 340)
                         .blur(radius: 50)
 
-                    // ── Always landscape — orientation is locked ────────
-                    landscapeContent(w: max(w, h), h: min(w, h))
+                    if w > h {
+                        landscapeContent(w: w, h: h)
+                    } else {
+                        portraitContent(w: w, h: h)
+                    }
                 }
             }
             .navigationBarHidden(true)
@@ -89,6 +92,32 @@ struct ContentView: View {
             .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 20)
+    }
+
+    // ── PORTRAIT ─────────────────────────────────────────────────────────
+
+    @ViewBuilder
+    func portraitContent(w: CGFloat, h: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            Spacer()
+
+            Image("sinfondo")
+                .resizable()
+                .scaledToFit()
+                .frame(width: w * 0.55)
+                .padding(.bottom, 40)
+
+            voiceBadge
+                .padding(.bottom, 14)
+
+            playButton
+
+            aboutButton
+                .padding(.top, 10)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
     }
 
     // ── Shared components ────────────────────────────────────────────────
