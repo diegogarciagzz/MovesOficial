@@ -30,12 +30,14 @@ struct ContentView: View {
                     )
                     .ignoresSafeArea()
 
-                    Image("backgroundpiecessin")
-                        .resizable()
-                        .scaledToFill()
-                        .opacity(0.12)
-                        .ignoresSafeArea()
-                        .allowsHitTesting(false)
+                    if w > h {
+                        Image("backgroundpiecessin")
+                            .resizable()
+                            .scaledToFill()
+                            .opacity(0.12)
+                            .ignoresSafeArea()
+                            .allowsHitTesting(false)
+                    }
 
                     Circle()
                         .fill(Color.movesBlue.opacity(0.06))
