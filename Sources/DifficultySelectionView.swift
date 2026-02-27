@@ -38,6 +38,7 @@ struct DifficultySelectionView: View {
     var body: some View {
         ZStack {
             Color.dDeep.ignoresSafeArea()
+                .onAppear { enforceLandscape() }
 
             // Ambient glows
             Circle()

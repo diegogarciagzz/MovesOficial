@@ -27,6 +27,7 @@ struct AboutView: View {
                 startPoint: .topLeading, endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
+            .onAppear { enforceLandscape() }
 
             Circle()
                 .fill(Color.aBlue.opacity(0.07))

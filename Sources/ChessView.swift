@@ -101,6 +101,7 @@ public struct ChessView: View {
                     startPoint: .topLeading, endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
+                .onAppear { enforceLandscape() }
 
                 if isLandscape {
                     landscapeLayout(w: w, h: h)

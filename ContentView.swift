@@ -47,8 +47,11 @@ struct ContentView: View {
                 }
             }
             .navigationBarHidden(true)
-            .fullScreenCover(isPresented: $showAbout) { AboutView() }
+            .fullScreenCover(isPresented: $showAbout) {
+                AboutView().onAppear { enforceLandscape() }
+            }
             .onAppear {
+                enforceLandscape()
                 if !permissionsRequested {
                     permissionsRequested = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
