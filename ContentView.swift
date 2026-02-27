@@ -30,15 +30,12 @@ struct ContentView: View {
                     )
                     .ignoresSafeArea()
 
-                    // Chess-piece texture — landscape only (causes glitches in portrait)
-                    if w > h {
-                        Image("backgroundpiecessin")
-                            .resizable()
-                            .scaledToFill()
-                            .opacity(0.12)
-                            .ignoresSafeArea()
-                            .allowsHitTesting(false)
-                    }
+                    Image("backgroundpiecessin")
+                        .resizable()
+                        .scaledToFill()
+                        .opacity(0.12)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
 
                     Circle()
                         .fill(Color.movesBlue.opacity(0.06))
