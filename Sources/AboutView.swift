@@ -85,7 +85,7 @@ struct AboutView: View {
                                     .foregroundColor(.white.opacity(0.9))
                                     .lineSpacing(4)
 
-                                // CS Society highlight
+                                // CS Society + SEITC — single block
                                 HStack(alignment: .top, spacing: 14) {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 10)
@@ -95,11 +95,14 @@ struct AboutView: View {
                                             .font(.system(size: 14, weight: .semibold))
                                             .foregroundColor(Color.aGold)
                                     }
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("President · CS Student Society")
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("Computer Science Student Society")
                                             .font(.system(size: 14, weight: .bold))
                                             .foregroundColor(.white)
-                                        Text("Leading a 30+ member team, representing 1,000+ students. We organize large-scale academic and technical events and connect our community with industry.")
+                                        Text("President")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundColor(Color.aGold.opacity(0.85))
+                                        Text("Leading a 30+ member team, representing 1,000+ students. We organize large-scale academic and technical events, connect our community with industry, and help peers grow, collaborate, and make an impact beyond the classroom.")
                                             .font(.system(size: 13))
                                             .foregroundColor(.white.opacity(0.65))
                                             .lineSpacing(3)
@@ -110,32 +113,6 @@ struct AboutView: View {
                                 .cornerRadius(12)
                                 .overlay(RoundedRectangle(cornerRadius: 12)
                                     .stroke(Color.aGold.opacity(0.18), lineWidth: 1))
-
-                                // SEITC / leadership highlight
-                                HStack(alignment: .top, spacing: 14) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 10)
-                                            .fill(Color.aBlue.opacity(0.14))
-                                            .frame(width: 40, height: 40)
-                                        Image(systemName: "star.fill")
-                                            .font(.system(size: 14, weight: .semibold))
-                                            .foregroundColor(Color.aBlue)
-                                    }
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Member · SEITC Leadership")
-                                            .font(.system(size: 14, weight: .bold))
-                                            .foregroundColor(.white)
-                                        Text("Part of a student-led initiative bringing engineering talent together. Helping peers grow, collaborate, and make an impact beyond the classroom.")
-                                            .font(.system(size: 13))
-                                            .foregroundColor(.white.opacity(0.65))
-                                            .lineSpacing(3)
-                                    }
-                                }
-                                .padding(14)
-                                .background(Color.aBlue.opacity(0.06))
-                                .cornerRadius(12)
-                                .overlay(RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.aBlue.opacity(0.18), lineWidth: 1))
 
                                 Text("I believe technology should lift everyone up. MOVES is the product of that belief — built for the community, with access and inclusion at its core.")
                                     .font(.system(size: 15))

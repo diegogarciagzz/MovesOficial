@@ -88,21 +88,21 @@ struct DifficultySelectionView: View {
                 Image("sinfondo")
                     .resizable()
                     .scaledToFit()
-                    .frame(maxWidth: 160, maxHeight: 110)
-                    .padding(.bottom, 8)
+                    .frame(maxWidth: 220, maxHeight: 160)
+                    .padding(.bottom, 12)
 
                 // Decorative pieces row
-                HStack(spacing: 8) {
+                HStack(spacing: 14) {
                     ForEach(["pawn_white", "knight_white", "bishop_white",
                               "rook_white", "queen_white"], id: \.self) { p in
                         Image(p)
                             .resizable()
                             .scaledToFit()
-                            .frame(width: 22, height: 22)
-                            .opacity(0.22)
+                            .frame(width: 36, height: 36)
+                            .opacity(0.30)
                     }
                 }
-                .padding(.top, 22)
+                .padding(.top, 20)
 
                 Spacer()
 
