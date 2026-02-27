@@ -32,10 +32,10 @@ struct ContentView: View {
 
                     Image("backgroundpiecessin")
                         .resizable()
-                        .scaledToFit()
+                        .scaledToFill()
+                        .frame(width: w, height: h)
+                        .clipped()
                         .opacity(0.12)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .ignoresSafeArea()
                         .allowsHitTesting(false)
 
                     Circle()
