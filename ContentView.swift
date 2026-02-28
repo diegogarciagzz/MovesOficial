@@ -33,9 +33,7 @@ struct ContentView: View {
                     Image("backgroundpiecessin")
                         .resizable()
                         .scaledToFill()
-                        .frame(width: w, height: h,
-                               alignment: w > h ? .bottom : .leading)
-                        .clipped()
+                        .ignoresSafeArea()
                         .opacity(0.12)
                         .allowsHitTesting(false)
 
