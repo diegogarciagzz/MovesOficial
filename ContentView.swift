@@ -95,7 +95,6 @@ struct ContentView: View {
     }
 
     // ── PORTRAIT ─────────────────────────────────────────────────────────
-    // Fixed frame gives Spacers a real height to expand into.
 
     @ViewBuilder
     func portraitContent(w: CGFloat, h: CGFloat) -> some View {

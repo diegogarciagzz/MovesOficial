@@ -5,9 +5,6 @@ import AVFoundation
 
 // ═══════════════════════════════════════════════════════════════════════════
 // MARK: - Landscape Hosting Controller
-//
-// Subclasses UIHostingController to override orientation at the UIKit level.
-// This is the ONLY approach that reliably blocks portrait on all iPadOS versions.
 // ═══════════════════════════════════════════════════════════════════════════
 
 final class LandscapeHostingController: UIHostingController<AnyView> {
@@ -25,9 +22,6 @@ final class LandscapeHostingController: UIHostingController<AnyView> {
 // ═══════════════════════════════════════════════════════════════════════════
 // MARK: - Scene Delegate
 //
-// Creates UIWindow with LandscapeHostingController as root view controller.
-// Called because AppDelegate.configurationForConnecting returns this class
-// AND Info.plist has UIApplicationSceneManifest (required to activate scene lifecycle).
 // ═══════════════════════════════════════════════════════════════════════════
 
 class SceneDelegate: NSObject, UIWindowSceneDelegate {
@@ -70,8 +64,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 // ═══════════════════════════════════════════════════════════════════════════
 // MARK: - App Entry Point
 //
-// @main is kept here. The WindowGroup content is managed by SceneDelegate —
-// SwiftUI detects the scene delegate created a window and defers to it.
 // ═══════════════════════════════════════════════════════════════════════════
 
 @main
